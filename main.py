@@ -35,7 +35,7 @@ class UserCreate(BaseModel):
 class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6)
-    phone: Optional[str] = None
+    phone: Optional[str] = None  # <- dùng string
 
 class MeOut(BaseModel):
     email: EmailStr

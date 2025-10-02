@@ -1,4 +1,5 @@
 <script type="text/javascript">
+  window.HOPESEED_API_BASE = 'https://hopeseed.onrender.com';
   /* === XLSX helpers (nếu bạn dùng) === */
   var gk_isXlsx = false;
   var gk_xlsxFileLookup = {};
@@ -544,32 +545,21 @@
       }
     }
 
-    async function doSignup(email, password, phone){
-      setLoading(signupBtn, true);
-      try{
-        const payload = { email, password };
-        if (phone) payload.phone = Number(phone) || undefined;
-
-        const res = await fetch(API_ROUTES.register(API_BASE), {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json().catch(()=> ({}));
-        if(!res.ok){
-          // main.py: 400 "Email already registered"
-          throw new Error(data.detail || 'Đăng ký thất bại');
+      async function doSignup(email, password, phone){
+        setLoading(signupBtn, true);
+        try{
+          const payload = { email, password };
+          if (phone) payload.phone = phone; // ĐỂ STRING, đừng Number() để khỏi mất số 0 đầu
+          await httpPost(`${API_BASE}/register`, payload);
+          alert('Đăng ký thành công. Vui lòng đăng nhập.');
+          switchAuthTab('login');
+        }catch(err){
+          alert(err.message || 'Đăng ký thất bại');
+          console.error('[Register error]', err);
+        }finally{
+          setLoading(signupBtn, false);
         }
-
-        // main.py không trả token → báo thành công và chuyển qua tab login
-        alert('Đăng ký thành công. Vui lòng đăng nhập.');
-        switchAuthTab('login');
-      }catch(err){
-        alert(err.message || 'Lỗi kết nối');
-      }finally{
-        setLoading(signupBtn, false);
       }
-    }
-
     // Submit handlers
     loginForm?.addEventListener('submit', (e)=>{
       e.preventDefault();
