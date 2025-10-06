@@ -1,0 +1,536 @@
+<script type="text/javascript">
+  window.HOPESEED_API_BASE = 'https://hopeseed.onrender.com';
+  // --- HTTP helper dùng chung (toàn cục) ---
+  window.httpPost = async function(url, body){
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      let msg = `HTTP ${res.status} ${res.statusText}`;
+      try { const j = await res.json(); if (j && j.detail) msg = j.detail; } catch {}
+      throw new Error(msg);
+    }
+    return res.json();
+  };
+  /* === XLSX helpers (nếu bạn dùng) === */
+  var gk_isXlsx = false;
+  var gk_xlsxFileLookup = {};
+  var gk_fileData = {};
+  function filledCell(cell) { return cell !== '' && cell != null; }
+  function loadFileData(filename) {
+    if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+      try {
+        var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+        var firstSheetName = workbook.SheetNames[0];
+        var worksheet = workbook.Sheets[firstSheetName];
+        var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+        var filteredData = jsonData.filter(row => row.some(filledCell));
+        var headerRowIndex = filteredData.findIndex((row, index) =>
+          row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+        );
+        if (headerRowIndex === -1 || headerRowIndex > 25) headerRowIndex = 0;
+        var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+        csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+        return csv;
+      } catch (e) { console.error(e); return ""; }
+    }
+    return gk_fileData[filename] || "";
+  }
+</script>
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>HopeSeed</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lobster&family=Pacifico&family=Style+Script&display=swap&subset=vietnamese" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxuvwv/b4jzlGC62Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="icon" href="https://ik.imagekit.io/o2u9hny2s/hopeseed/LOGO8.png" type="image/png">
+
+  <style>
+    :root {
+      color-scheme: light;
+      --accent: #34b3d3;
+      --accent-strong: #0284c7;
+      --accent-dark: #1e3a8a;
+      --accent-soft: rgba(2, 132, 199, 0.12);
+      --card-bg: #f0f9ff;
+      --card-border: rgba(2, 132, 199, 0.2);
+
+      --lh-tight: 1.15;
+      --lh-normal: 1.6;
+    }
+    html, body { width: 100%; overflow-x: hidden; }
+    body{
+      font-family: 'Plus Jakarta Sans','Inter','Be Vietnam Pro','Noto Sans','Segoe UI',system-ui,-apple-system,sans-serif;
+      -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+      font-kerning: normal; font-feature-settings: "liga","calt","ss01","cv05";
+      background: linear-gradient(125deg, #e0f2fe 0%, #bae6fd 45%, #ffffff 100%); color: #083344;
+    }
+    .glass-card {
+      background: rgba(240, 249, 255, 0.94);
+      backdrop-filter: blur(22px);
+      border: 1px solid var(--card-border);
+      box-shadow: 0 28px 55px -28px rgba(2, 132, 199, 0.35);
+    }
+    .glass-card--transparent{
+      background: transparent; backdrop-filter: none;
+      border: 1px solid var(--card-border);
+      box-shadow: 0 28px 55px -28px rgba(2,132,199,0.35);
+    }
+    .glass-frame{ position: relative; border-radius: 32px; overflow: hidden; box-shadow: 0 28px 55px -28px rgba(2,132,199,0.35); }
+    .glass-frame::before{ content:""; position:absolute; inset:0; border-radius:inherit; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6); pointer-events:none; }
+
+    .hero-glow {
+      position: absolute; inset: auto -12rem -6rem auto;
+      width: 28rem; height: 28rem;
+      background: radial-gradient(circle at center, rgba(2, 132, 199, 0.45), transparent 65%);
+      opacity: 0.75;
+    }
+    .dashboard-backdrop { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    .dashboard-backdrop div { position: absolute; border-radius: 9999px; filter: blur(120px); opacity: 0.65; }
+    .dashboard-backdrop div:nth-child(1){ width:540px; height:540px; background: rgba(2,132,199,.32); top:-120px; left:-140px;}
+    .dashboard-backdrop div:nth-child(2){ width:480px; height:480px; background: rgba(125,211,252,.28); bottom:-160px; right:-120px;}
+    .dashboard-backdrop div:nth-child(3){ width:380px; height:380px; background: rgba(147,197,253,.24); top:38%; right:28%;}
+
+    .bg-blue-500 { background-color: var(--accent) !important; }
+    .hover\:bg-blue-600:hover { background-color: var(--accent-dark) !important; }
+    .bg-blue-50 { background-color: var(--accent-soft) !important; }
+    .text-blue-600 { color: var(--accent-strong) !important; }
+    .text-blue-700 { color: var(--accent-dark) !important; }
+    .border-blue-200 { border-color: rgba(2,132,199,.42) !important; }
+    .border-blue-200\/60 { border-color: rgba(2,132,199,.28) !important; }
+    .border-blue-100\/60 { border-color: rgba(2,132,199,.18) !important; }
+    .border-blue-600 { border-color: var(--accent-strong) !important; }
+    .ring-blue-200 { --tw-ring-color: rgba(2,132,199,.28) !important; }
+    .ring-blue-100 { --tw-ring-color: rgba(2,132,199,.18) !important; }
+    .shadow-blue-500\/40 { box-shadow: 0 18px 48px rgba(2,132,199,.32) !important; }
+    .shadow-blue-500\/30 { box-shadow: 0 18px 42px rgba(2,132,199,.24) !important; }
+    .shadow-blue-500\/20 { box-shadow: 0 12px 28px rgba(2,132,199,.18) !important; }
+    .hover\:bg-blue-50:hover { background-color: rgba(2,132,199,.12) !important; }
+    .focus\:border-blue-400:focus { border-color: rgba(2,132,199,.7) !important; box-shadow: 0 0 0 3px rgba(2,132,199,.2); }
+    .focus\:ring-blue-100:focus { --tw-ring-color: rgba(2,132,199,.25) !important; }
+
+    /* Slide panel */
+    #loginPanel{ will-change: transform; }
+    .slide-in { transform: translateX(0); transition: transform .32s cubic-bezier(.2,.8,.2,1); }
+    .slide-out{ transform: translateX(100%); transition: transform .28s cubic-bezier(.4,0,.2,1); }
+
+    /* Overlay */
+    .overlay{ position:fixed; inset:0; background:rgba(15,23,42,.35); backdrop-filter:saturate(120%) blur(2px);
+      opacity:0; pointer-events:none; transition: opacity .22s ease; z-index:49; }
+    .overlay.show{ opacity:1; pointer-events:auto; }
+
+    /* Tabs */
+    .tabs{ display:flex; gap:8px; border-radius:9999px; background:#f1f5f9; padding:4px; }
+    .tab-btn{ flex:1; padding:8px 12px; border-radius:9999px; font-weight:600; font-size:14px; color:#334155; }
+    .tab-btn.active{ background:#fff; color:#0f172a; box-shadow: 0 6px 18px rgba(2,132,199,.12); }
+
+    /* Eye icon */
+    .eye-btn{ position:absolute; right:10px; top:50%; transform: translateY(-50%); color:#64748b; }
+    .eye-btn:hover{ color:#334155; }
+
+    /* Loading state */
+    .btn-loading{ position:relative; pointer-events:none; opacity:.8; }
+    .btn-loading::after{
+      content:""; position:absolute; right:14px; top:50%; transform: translateY(-50%);
+      width:16px; height:16px; border:2px solid rgba(255,255,255,.6); border-top-color:#fff; border-radius:50%;
+      animation:spin .8s linear infinite;
+    }
+    @keyframes spin{ to{ transform: translateY(-50%) rotate(360deg);} }
+
+    /* FAB */
+    .fab-wrap{ position: fixed; right: 18px; bottom: 18px; z-index: 60; }
+    .fab-main{
+      height:56px; width:56px; border-radius:9999px; display:flex; align-items:center; justify-content:center;
+      background: var(--accent); color:#fff; box-shadow: 0 14px 30px rgba(2,132,199,.28);
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .fab-main:hover{ transform: translateY(-2px); box-shadow: 0 20px 40px rgba(2,132,199,.34); }
+    .fab-tray{
+      position:absolute; right:66px; bottom:0; display:flex; gap:10px; pointer-events:none;
+      transform: translateX(20px); opacity:0; transition: transform .25s ease, opacity .25s ease;
+    }
+    .fab-wrap.open .fab-tray{ transform: translateX(0); opacity:1; pointer-events:auto; }
+    .fab-btn{
+      border-radius:9999px; padding:10px 14px; font-weight:600; font-size:14px;
+      background:#fff; color: var(--accent-strong); border:1px solid var(--card-border);
+      box-shadow: 0 10px 26px rgba(2,132,199,.14);
+      transition: transform .2s ease, background .2s ease; white-space: nowrap;
+    }
+    .fab-btn:hover{ background:#f8fbff; transform: translateY(-1px); }
+    .btn-flat {
+      background-color: #3788bb;   /* màu mặc định */
+      color: #fff;
+      transition: all 0.25s ease;
+      }
+      .btn-flat:hover {
+        background-color: #120747;  /* màu hover */
+      }
+  </style>
+</head>
+
+<body class="relative text-slate-700">
+  <!-- Background glow -->
+  <div class="dashboard-backdrop" aria-hidden="true">
+    <div></div><div></div><div></div>
+  </div>
+
+  <div class="relative z-10">
+    <!-- NAV -->
+    <nav class="max-w-6xl mx-auto px-6 pt-8">
+      <div class="glass-card rounded-3xl px-6 py-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <a href="index.html" class="flex items-center gap-3">
+          <span class="inline-flex h-12 w-12 items-center justify-center rounded-2xl">
+                <img src="https://ik.imagekit.io/o2u9hny2s/hopeseed/LOGO8.png"
+                 alt="logo" class="h-full w-full object-contain bg-transparent" loading="lazy"/>
+          </span>
+          <div>
+            <p class="text-xs uppercase tracking-[0.35em] text-black-700" data-i18n="brand_tag">HopeSeed</p>
+            <p class="text-base font-semibold text-slate-900" data-i18n="brand_title">Hệ thống quyên góp P2P </p>
+          </div>
+        </a>
+
+        <div class="flex flex-wrap items-center gap-3 text-sm">
+          <a href="campaigns.html" class="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1 text-sm font-medium text-blue-600 shadow-sm ring-1 ring-blue-200"><i class="fas fa-concierge-bell mr-1"></i>+ Create a campaign</a>
+          <button id="langBtn" class="rounded-full border border-blue-200/60 bg-white/70 px-3 py-1 text-blue-700 hover:bg-blue-50 transition" title="Switch language">EN / VI</button>
+          <!-- <span id="userInfo" class="rounded-full bg-blue-50 px-3 py-1 text-blue-700 border border-blue-200/60" data-i18n="not_logged">Chưa đăng nhập</span> -->
+          <button id="logoutBtn" class="hidden rounded-full border border-red-200 px-3 py-1 text-red-600 transition hover:bg-red-50">
+            <i class="fas fa-sign-out-alt mr-1"></i><span data-i18n="logout">Đăng xuất</span>
+          </button>
+          <button id="loginToggleBtn" class="rounded-full bg-slate-900 px-4 py-2 text-white transition hover:bg-slate-800 shadow-lg shadow-slate-900/20">
+            <i class="fas fa-sign-in-alt mr-1"></i><span data-i18n="login">Đăng nhập/Đăng ký</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- HERO -->
+    <header class="max-w-6xl mx-auto px-6 pt-12">
+        <main class="max-w-6xl mx-auto px-6 mt-16 pb-20">
+            <div class="glass-card rounded-3xl p-6 md:p-8 space-y-8">
+                <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                    <div>
+                        <h2 class="text-4xl sm:text-2xl font-normal leading-snug text-slate-700 font-[Pacifico]">Những mảnh đời yêu thương</h2>
+                        <p class="text-sm text-slate-500">Rất xin lỗi, hiện tại chưa có trường hợp nào. Vui lòng tạo tài khỏan để nhận thông tin khi có update nhé</p>
+                    </div>
+                    <p class="text-xs uppercase tracking-[0.4em] text-blue-600">...</p>
+                </div>
+                <div id="productsList" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3"></div>
+            </div>
+        </main>
+    </header>
+
+
+    <!-- OVERLAY -->
+    <div id="overlay" class="overlay"></div>
+
+    <!-- AUTH PANEL -->
+    <div id="loginPanel" class="fixed top-0 right-0 h-full w-full max-w-sm bg-white/95 shadow-2xl slide-out z-50 p-6">
+      <button type="button" onclick="closeAuth()" class="absolute right-5 top-5 text-slate-400 hover:text-slate-600">
+        <i class="fas fa-times"></i>
+      </button>
+
+      <!-- <h3 class="text-xl font-semibold text-slate-900 mb-4">Tài khoản</h3> -->
+
+      <!-- Tabs -->
+      <div class="tabs mb-5">
+        <button type="button" id="tabLogin" class="tab-btn active" onclick="switchAuthTab('login')">Đăng nhập</button>
+        <button id="tabSignup" class="tab-btn" onclick="switchAuthTab('signup')">Đăng ký</button>
+      </div>
+
+      <!-- LOGIN -->
+      <form id="loginForm" class="space-y-4">
+        <div class="flex flex-col gap-2">
+          <label for="email" class="text-xs font-medium uppercase tracking-wide text-slate-500" data-i18n="email">Email</label>
+          <input type="email" id="email" class="w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" required/>
+        </div>
+        <div class="flex flex-col gap-2 relative">
+          <label for="password" class="text-xs font-medium uppercase tracking-wide text-slate-500" data-i18n="password">Mật khẩu</label>
+          <input type="password" id="password" class="w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-2 pr-10 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" required/>
+          <button class="eye-btn" type="button" onclick="toggleEye('password')"><i class="fa-regular fa-eye"></i></button>
+        </div>
+        <label class="inline-flex items-center gap-2 text-xs text-slate-600">
+          <input id="rememberMe" type="checkbox" class="rounded border-slate-300"> Ghi nhớ đăng nhập
+        </label>
+        <div class="pt-1">
+          <button id="loginBtn" type="submit" class="w-full rounded-full bg-blue-500 px-4 py-3 font-medium text-white shadow-lg shadow-blue-500/30 transition hover:-translate-y-0.5 hover:bg-blue-600">
+            Đăng nhập
+          </button>
+        </div>
+      </form>
+
+      <!-- SIGNUP -->
+      <form id="signupForm" class="space-y-4 hidden">
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-medium uppercase tracking-wide text-slate-500">Email</label>
+          <input type="email" id="su_email" class="w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" required/>
+        </div>
+        <div class="flex flex-col gap-2 relative">
+          <label class="text-xs font-medium uppercase tracking-wide text-slate-500">Mật khẩu</label>
+          <input type="password" id="su_password" class="w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-2 pr-10 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" minlength="6" required/>
+          <button class="eye-btn" type="button" onclick="toggleEye('su_password')"><i class="fa-regular fa-eye"></i></button>
+        </div>
+        <!-- Field phone (tuỳ chọn) để khớp UserRegister -->
+        <div class="flex flex-col gap-2">
+          <label class="text-xs font-medium uppercase tracking-wide text-slate-500">Số điện thoại (tuỳ chọn)</label>
+          <input type="tel" id="su_phone" class="w-full rounded-2xl border border-slate-200 bg-white/90 px-4 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100" inputmode="numeric" />
+        </div>
+        <div class="pt-1">
+          <button id="signupBtn" type="submit" class="w-full rounded-full bg-blue-500 px-4 py-3 font-medium text-white shadow-lg shadow-blue-500/30 transition hover:-translate-y-0.5 hover:bg-blue-600">
+            Tạo tài khoản
+          </button>
+        </div>
+        <p class="text-xs text-slate-500">Bằng việc đăng ký, bạn đồng ý với điều khoản & chính sách bảo mật.</p>
+      </form>
+    </div>
+
+    <!-- FAB auth -->
+    <div class="fab-wrap" id="fab">
+      <div class="fab-tray">
+        <button class="fab-btn" onclick="openAuth('login')"><i class="fas fa-right-to-bracket mr-1"></i> Đăng nhập</button>
+        <button class="fab-btn" onclick="openAuth('signup')"><i class="fas fa-user-plus mr-1"></i> Đăng ký</button>
+      </div>
+      <button class="fab-main" id="fabMain" title="Tài khoản">
+        <i class="fas fa-user"></i>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ====== SIMPLE i18n ======
+    const I18N = {
+      vi: {
+        brand_tag: "HOPE SEED",
+        brand_title: "Hệ thống quyên góp P2P",
+        // not_logged: "Chưa đăng nhập",
+        logout: "Đăng xuất",
+        login: "Đăng nhập/Đăng ký",
+        hero_h1: "Gieo một hạt giống – Nuôi dưỡng một sự sống",
+        hero_p: "🌱 HopeSeed là nền tảng phi lợi nhuận kết nối cộng đồng với những bệnh nhân đang cần giúp đỡ tại các bệnh viện. Mọi người có thể quyên góp P2P minh bạch, công khai. Mỗi tấm lòng dù nhỏ bé cũng có thể tạo nên niềm hy vọng lớn lao cho người bệnh. Bạn có thể xem câu chuyện, quyên góp trực tiếp và theo dõi tiến trình hỗ trợ. Hoặc bạn có thể chính là cầu nối bệnh nhận với các nhà hảo tâm." ,
+        cta_more: "Những mảnh đời yêu thương✨",
+        stat_donors_label: "Người ủng hộ đang sẵn sàng",
+        stat_fund_label: "Chiến dịch tin cậy",
+        hero_widget_title: "Chiến dịch đang hoạt động",
+        hero_widget_note: "",
+        section_tag: "Gợi ý gây quỹ",
+        section_title: "Câu chuyện chung tay",
+        // card1_tag: "Giọt Hy Vọng",
+        // card1_text: "Hỗ trợ với Giọt Hy Vọng 💧",
+        card2_tag: "Trẻ em",
+        card2_text: "Đồng hành cùng bệnh nhân ung thư trong các giai đoạn điều trị.",
+        card3_tag: "Cấp cứu",
+        card3_text: "Hỗ trợ khẩn cấp cho các ca cần can thiệp nhanh, kịp thời",
+        email: "Email",
+        password: "Mật khẩu"
+      },
+      en: {
+        brand_tag: "HOPE SEED",
+        brand_title: "P2P Donation Platform",
+        // not_logged: "Not logged in",
+        logout: "Logout",
+        login: "Login/Signup",
+        hero_h1: "Plant a seed – Nurture a life",
+        hero_p: "🌱 HopeSeed is a non-profit platform connecting the community with hospital patients in need. People can donate peer-to-peer with transparency. Every small act of kindness can grow into hope. Browse real stories, donate directly, and track progress openly or Be a connector of patient to our community",
+        cta_more: "Hope Stories ✨",
+        stat_donors_label: "Donors are ready",
+        stat_fund_label: "Trusted campaigns",
+        hero_widget_title: "Active campaigns",
+        hero_widget_note: "",
+        section_tag: "Suggested causes",
+        section_title: "Stories that need your help",
+        // card1_tag: "Precious Drops",
+        // card1_text: "Support with your Precious Drops 💧",
+        card2_tag: "Children",
+        card2_text: "Stand by cancer patients through treatment stages.",
+        card3_tag: "Emergency",
+        card3_text: "Rapid aid for cases requiring urgent intervention",
+        email: "Email",
+        password: "Password"
+      }
+    };
+
+    function applyI18n(lang) {
+      const dict = I18N[lang] || I18N.vi;
+      document.documentElement.lang = lang;
+      document.querySelectorAll("[data-i18n]").forEach(el => {
+        const key = el.getAttribute("data-i18n");
+        if (dict[key]) el.textContent = dict[key];
+      });
+      const email = document.getElementById('email');
+      const password = document.getElementById('password');
+      if (email) email.placeholder = dict.email;
+      if (password) password.placeholder = dict.password;
+      localStorage.setItem("lang", lang);
+    }
+    function toggleLang() {
+      const current = localStorage.getItem("lang") || "vi";
+      const next = current === "vi" ? "en" : "vi";
+      applyI18n(next);
+    }
+
+    // ====== API base ======
+    const API_BASE = (function(){
+      const env = window.HOPESEED_API_BASE; // optionally injected
+      if (env) return env.replace(/\/$/, '');
+      const host = location.hostname;
+      if (host === 'localhost' || host === '127.0.0.1') return 'http://localhost:8000';
+      return '/api'; // Netlify -> Redirect/Proxy đến backend
+    })();
+
+    // ====== AUTH HELPERS & UI (khớp main.py) ======
+    const API_ROUTES = {
+      login: (base) => `${base}/login`,
+      register: (base) => `${base}/register`,
+    };
+
+    function getToken() { return localStorage.getItem("access_token") || ''; }
+    function getEmail() { return localStorage.getItem("user_email") || ''; }
+
+    // Elements
+    const overlay = document.getElementById('overlay');
+    const panel = document.getElementById('loginPanel');
+    const tabLogin = document.getElementById('tabLogin');
+    const tabSignup = document.getElementById('tabSignup');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const loginBtn = document.getElementById('loginBtn');
+    const signupBtn = document.getElementById('signupBtn');
+
+    function openAuth(which='login'){
+      switchAuthTab(which);
+      overlay?.classList.add('show');
+      panel?.classList.remove('slide-out');
+      panel?.classList.add('slide-in');
+    }
+    function closeAuth(){
+      overlay?.classList.remove('show');
+      panel?.classList.remove('slide-in');
+      panel?.classList.add('slide-out');
+    }
+    function switchAuthTab(which){
+      const isLogin = which === 'login';
+      tabLogin?.classList.toggle('active', isLogin);
+      tabSignup?.classList.toggle('active', !isLogin);
+      loginForm?.classList.toggle('hidden', !isLogin);
+      signupForm?.classList.toggle('hidden', isLogin);
+    }
+    function toggleEye(inputId){
+      const el = document.getElementById(inputId);
+      if (!el) return;
+      el.type = el.type === 'password' ? 'text' : 'password';
+    }
+    function toggleLogin(){ openAuth('login'); } // giữ tương thích nút nav
+
+    overlay?.addEventListener('click', closeAuth);
+    document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeAuth(); });
+
+    // FAB
+    (function initFab(){
+      const fab = document.getElementById('fab');
+      const fabMain = document.getElementById('fabMain');
+      if (!fab || !fabMain) return;
+      fabMain.addEventListener('click', ()=> fab.classList.toggle('open'));
+      document.addEventListener('click', (e)=>{
+        if (!fab.contains(e.target)) fab.classList.remove('open');
+      });
+    })();
+
+    function setLoading(btn, isLoading){
+      if (!btn) return;
+      btn.classList.toggle('btn-loading', isLoading);
+      btn.disabled = !!isLoading;
+    }
+
+    function updateUIAfterLogin(email){
+      const userInfo = document.getElementById('userInfo');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const loginToggleBtn = document.getElementById('loginToggleBtn');
+      if (userInfo) userInfo.textContent = email || getEmail() || '—';
+      if (logoutBtn) logoutBtn.classList.remove('hidden');
+      if (loginToggleBtn) loginToggleBtn.classList.add('hidden');
+    }
+
+    async function doLogin(email, password, remember){
+      setLoading(loginBtn, true);
+      try{
+        const res = await fetch(API_ROUTES.login(API_BASE), {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if(!res.ok){ throw new Error(data.detail || 'Đăng nhập thất bại'); }
+
+        // main.py trả: { access_token, is_admin, email, message }
+        if (!data.access_token) { throw new Error('Thiếu access_token từ server'); }
+
+        localStorage.setItem('access_token', data.access_token);
+        localStorage.setItem('user_email', data.email || email);
+        if (remember) localStorage.setItem('remember_me','1'); else localStorage.removeItem('remember_me');
+
+        updateUIAfterLogin(data.email || email);
+        closeAuth();
+
+        if (data.is_admin === true) location.href = 'monitor.html';
+      }catch(err){
+        alert(err.message || 'Lỗi kết nối');
+      }finally{
+        setLoading(loginBtn, false);
+      }
+    }
+
+      async function doSignup(email, password, phone){
+        setLoading(signupBtn, true);
+        try{
+          const payload = { email, password };
+          if (phone) payload.phone = phone; // ĐỂ STRING, đừng Number() để khỏi mất số 0 đầu
+          await httpPost(`${API_BASE}/register`, payload);
+          alert('Đăng ký thành công. Vui lòng đăng nhập.');
+          switchAuthTab('login');
+        }catch(err){
+          alert(err.message || 'Đăng ký thất bại');
+          console.error('[Register error]', err);
+        }finally{
+          setLoading(signupBtn, false);
+        }
+      }
+    // Submit handlers
+    loginForm?.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const remember = document.getElementById('rememberMe').checked;
+      doLogin(email, password, remember);
+    });
+    signupForm?.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      const email = document.getElementById('su_email').value.trim();
+      const password = document.getElementById('su_password').value;
+      const phone = document.getElementById('su_phone').value.trim();
+      if (password.length < 6){ alert('Mật khẩu tối thiểu 6 ký tự'); return; }
+      doSignup(email, password, phone);
+    });
+
+    // Logout
+    function logout(){
+      localStorage.clear();
+      location.reload();
+    }
+    document.getElementById('logoutBtn')?.addEventListener('click', logout);
+
+    // Init on load
+    document.addEventListener("DOMContentLoaded", () => {
+      applyI18n(localStorage.getItem("lang") || "vi");
+      document.getElementById('langBtn')?.addEventListener('click', toggleLang);
+      document.getElementById('loginToggleBtn')?.addEventListener('click', toggleLogin);
+
+      if (getToken()){ updateUIAfterLogin(getEmail()); }
+    });
+  </script>
+</body>
+</html>
