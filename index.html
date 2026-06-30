@@ -103,8 +103,6 @@
       <div class="grid gap-6 lg:grid-cols-[1fr,1.5fr] items-start">
         <!-- LEFT: detail + list -->
         <div class="glass-card rounded-3xl p-6 md:p-8 space-y-6">
-          <div id="vendorDetail" class="hidden rounded-2xl border border-blue-200/60 bg-white/90 p-4 space-y-3"></div>
-
           <div class="flex items-center justify-between">
             <h2 class="text-xl font-semibold text-slate-900">Danh sách gánh hàng đã duyệt</h2>
             <button onclick="loadVendors()" class="text-sm text-blue-600 hover:underline"><i class="fas fa-rotate-right mr-1"></i>Tải lại</button>
@@ -277,6 +275,8 @@
 
     let allVendors = [];
     let selectedVendor = null;
+    let expandedVendorId = null;
+    let currentListVendors = [];
 
     function switchTab(tab) {
       document.getElementById('panelMap').classList.toggle('active', tab === 'map');
@@ -447,21 +447,52 @@
         </div>`;
     }
 
+    // Lấy "quận" từ chuỗi địa chỉ (vd "Vỉa hè 12 Lê Lợi, Q.1, TP.HCM" -> "Q.1").
+    function extractDistrict(address) {
+      if (!address) return '';
+      const part = address.split(',').map(s => s.trim()).find(p => /^(q\.?\s*\d+|quận\s+.+)$/i.test(p));
+      return part || '';
+    }
+
     function vendorRowHtml(v, idx) {
+      if (expandedVendorId === v.id) return vendorDetailCardHtml(v);
+
+      const district = extractDistrict(v.address);
+      const meta = [v.category, district].filter(Boolean).join(' · ');
       return `
         <div class="vendor-row flex items-center gap-3 rounded-2xl border border-transparent p-3" onclick="selectVendor(${idx})">
           <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-[84px] w-[84px] object-contain flex-shrink-0"/>
           <div class="min-w-0 flex-1">
             <p class="font-semibold text-slate-900 truncate">${escapeHtml(v.name)}</p>
+            ${meta ? `<p class="text-xs text-slate-500 truncate">${escapeHtml(meta)}</p>` : ''}
             ${v.opening_hours ? `<p class="text-xs text-slate-500">${escapeHtml(v.opening_hours)}</p>` : ''}
-            <p class="text-xs text-slate-500 truncate"><i class="fas fa-location-dot mr-1"></i>${escapeHtml(v.address)}</p>
-            ${tagChips(v)}
           </div>
           ${heartWidgetHtml(v)}
         </div>`;
     }
 
+    function vendorDetailCardHtml(v) {
+      return `
+        <div class="rounded-2xl border border-blue-200/60 bg-white/90 p-4 flex items-start gap-4">
+          <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-[120px] w-[120px] object-contain flex-shrink-0"/>
+          <div class="min-w-0 flex-1 space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="font-semibold text-slate-900 text-lg">${escapeHtml(v.name)}</h3>
+              <button type="button" onclick="collapseVendor(event)" class="text-slate-400 hover:text-slate-600"><i class="fas fa-xmark"></i></button>
+            </div>
+            <p class="text-sm text-slate-600">${escapeHtml(v.description)}</p>
+            ${v.opening_hours ? `<p class="text-xs text-slate-500"><i class="fas fa-clock mr-1"></i>${escapeHtml(v.opening_hours)}</p>` : ''}
+            <p class="text-xs text-slate-500"><i class="fas fa-location-dot mr-1"></i>${escapeHtml(v.address)}</p>
+            ${tagChips(v)}
+            <div class="flex items-center gap-3 pt-2">${socialIcons(v)}</div>
+            <input type="text" placeholder="Ghi chú mọi thứ về Gánh hàng rong này"
+              class="mt-1 w-full rounded-full border border-blue-200/60 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/>
+          </div>
+        </div>`;
+    }
+
     function renderList(vendors) {
+      currentListVendors = vendors;
       const list = document.getElementById('vendorList');
       if (!vendors.length) {
         list.innerHTML = '<p class="text-sm text-slate-500">Không tìm thấy gánh hàng nào phù hợp.</p>';
@@ -476,38 +507,23 @@
       return `https://www.google.com/maps?q=${encodeURIComponent(v.address || v.name)}&output=embed`;
     }
 
+    // Click vào 1 gánh hàng -> ô chi tiết hiện NGAY tại vị trí của dòng đó trong danh sách
+    // (thay vì 1 khung chi tiết cố định riêng), bản đồ bên phải cũng cập nhật theo.
     function selectVendor(idx) {
       const v = allVendors[idx];
       if (!v) return;
       selectedVendor = v;
-
+      expandedVendorId = v.id;
       document.getElementById('mapFrame').src = mapEmbedSrc(v);
-
-      const detail = document.getElementById('vendorDetail');
-      detail.classList.remove('hidden');
-      detail.innerHTML = `
-        <div class="flex items-start gap-4">
-          <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-[120px] w-[120px] object-contain flex-shrink-0"/>
-          <div class="min-w-0 flex-1 space-y-1">
-            <div class="flex items-center justify-between gap-2">
-              <h3 class="font-semibold text-slate-900 text-lg">${escapeHtml(v.name)}</h3>
-              <button type="button" onclick="closeDetail()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-xmark"></i></button>
-            </div>
-            <p class="text-sm text-slate-600">${escapeHtml(v.description)}</p>
-            ${v.opening_hours ? `<p class="text-xs text-slate-500"><i class="fas fa-clock mr-1"></i>${escapeHtml(v.opening_hours)}</p>` : ''}
-            <p class="text-xs text-slate-500"><i class="fas fa-location-dot mr-1"></i>${escapeHtml(v.address)}</p>
-            ${tagChips(v)}
-            <div class="flex items-center gap-3 pt-2">${socialIcons(v)}</div>
-            <input type="text" placeholder="Ghi chú mọi thứ về Gánh hàng rong này"
-              class="mt-1 w-full rounded-full border border-blue-200/60 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/>
-          </div>
-        </div>`;
+      renderList(currentListVendors);
     }
 
-    function closeDetail() {
+    function collapseVendor(ev) {
+      if (ev) ev.stopPropagation();
       selectedVendor = null;
-      document.getElementById('vendorDetail').classList.add('hidden');
+      expandedVendorId = null;
       document.getElementById('mapFrame').src = mapEmbedSrc(null);
+      renderList(currentListVendors);
     }
 
     // Thả tim ủng hộ - cần đăng nhập (dùng chung phiên với form đóng góp).
@@ -568,6 +584,8 @@
     }
 
     async function loadVendors() {
+      expandedVendorId = null;
+      selectedVendor = null;
       const list = document.getElementById('vendorList');
       list.innerHTML = '<p class="text-sm text-slate-500">Đang tải danh sách...</p>';
       try {
