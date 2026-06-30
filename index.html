@@ -74,21 +74,11 @@
     <header class="max-w-6xl mx-auto px-6 pt-12">
       <div class="glass-card rounded-3xl p-6 md:p-8 grid gap-6 md:grid-cols-[1.2fr,0.8fr] items-center">
         <div class="space-y-4">
-          <span class="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1 text-sm font-medium text-blue-600 shadow-sm ring-1 ring-blue-200">#ganghangrong</span>
-          <h1 class="text-3xl sm:text-4xl font-semibold text-slate-900">Bản đồ gánh hàng rong</h1>
+          <h1 class="text-3xl sm:text-4xl font-semibold text-slate-900">Bản đồ hương vị yêu thương</h1>
           <p class="text-base text-slate-600 leading-7 max-w-xl">
             Nơi cộng đồng cùng nhau lưu lại địa chỉ, hình ảnh và mạng xã hội của các gánh hàng rong quen thuộc —
-            giúp mọi người dễ dàng tìm đến ủng hộ. Dự án phi lợi nhuận, không thu phí, không thu thập thông tin tài khoản ngân hàng.
+            giúp mọi người dễ dàng tìm đến ủng hộ. Hãy yêu thương và gìn giữ văn hoá Việt.
           </p>
-          <div class="flex flex-wrap items-center gap-3 pt-1">
-            <button type="button" onclick="switchTab('map')" class="btn-flat rounded-full px-6 py-3 font-medium shadow-lg transition hover:-translate-y-0.5">
-              <i class="fas fa-location-dot mr-1"></i> Xem bản đồ
-            </button>
-            <button type="button" onclick="switchTab('form')"
-              class="rounded-full border border-blue-200/60 bg-white/80 px-6 py-3 font-medium text-blue-700 transition hover:bg-blue-50">
-              <i class="fas fa-heart mr-1"></i> Đóng góp thông tin
-            </button>
-          </div>
         </div>
         <img id="heroIllustration" src="https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/maincharactor.png"
           alt="Gánh hàng rong" class="w-48 sm:w-72 mx-auto md:ml-auto md:mr-0 object-contain" loading="lazy"/>
@@ -282,7 +272,7 @@
     function vendorRowHtml(v, idx) {
       return `
         <div class="vendor-row flex items-center gap-3 rounded-2xl border border-transparent p-3" onclick="selectVendor(${idx})">
-          <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-14 w-14 rounded-xl object-cover flex-shrink-0 bg-white"/>
+          <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-14 w-14 object-contain flex-shrink-0"/>
           <div class="min-w-0 flex-1">
             <p class="font-semibold text-slate-900 truncate">${escapeHtml(v.name)}</p>
             ${v.opening_hours ? `<p class="text-xs text-slate-500">${escapeHtml(v.opening_hours)}</p>` : ''}
@@ -319,7 +309,7 @@
       detail.classList.remove('hidden');
       detail.innerHTML = `
         <div class="flex items-start gap-4">
-          <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-20 w-20 rounded-2xl object-cover flex-shrink-0 bg-white"/>
+          <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-20 w-20 object-contain flex-shrink-0"/>
           <div class="min-w-0 flex-1 space-y-1">
             <div class="flex items-center justify-between gap-2">
               <h3 class="font-semibold text-slate-900 text-lg">${escapeHtml(v.name)}</h3>
