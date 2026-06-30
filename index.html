@@ -44,6 +44,7 @@
       display:flex; align-items:center; gap:4px; border-radius:9999px; padding:6px;
       background: linear-gradient(125deg, rgba(224,242,254,0.5) 0%, rgba(186,230,253,0.5) 45%, rgba(255,255,255,0.5) 100%);
       backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,0.8);
       box-shadow: 0 10px 30px -12px rgba(2,132,199,.25);
     }
     .tab-btn{ flex:none; white-space:nowrap; padding:10px 18px; border-radius:9999px; font-weight:700; font-size:14px; color:#334155; transition: all .2s ease; }
@@ -96,7 +97,7 @@
 
     <!-- TAB: MAP / LIST -->
     <section id="panelMap" class="tab-panel active max-w-6xl mx-auto px-6 mt-6 mb-16">
-      <div class="grid gap-6 lg:grid-cols-[1.5fr,1fr] items-start">
+      <div class="grid gap-6 lg:grid-cols-[1fr,1.5fr] items-start">
         <!-- LEFT: detail + list -->
         <div class="glass-card rounded-3xl p-6 md:p-8 space-y-6">
           <div id="vendorDetail" class="hidden rounded-2xl border border-blue-200/60 bg-white/90 p-4 space-y-3"></div>
@@ -124,92 +125,119 @@
     <!-- TAB: FORM -->
     <section id="panelForm" class="tab-panel max-w-6xl mx-auto px-6 mt-6 mb-16">
       <div class="glass-card rounded-3xl p-6 md:p-8 space-y-6">
-        <div>
-          <h2 class="text-xl font-semibold text-slate-900">Đóng góp thông tin một gánh hàng</h2>
-          <p class="text-sm text-slate-500 mt-1">
-            Điền form bên dưới rồi bấm Gửi — bạn sẽ được chuyển sang GitHub (đã điền sẵn nội dung) để xác nhận gửi,
-            chỉ cần tài khoản GitHub miễn phí, không cần biết code. Thông tin sẽ ở trạng thái "chờ duyệt" trước khi hiển thị công khai.
-            <strong>Chúng tôi không thu thập số tài khoản ngân hàng.</strong>
-          </p>
-          <p class="text-sm text-amber-600 mt-2">
-            <i class="fas fa-triangle-exclamation mr-1"></i>
-            Lưu ý: email và số điện thoại bạn cung cấp bên dưới sẽ <strong>hiển thị công khai</strong> trên trang để người xem liên hệ.
-          </p>
+
+        <!-- Thanh trạng thái đăng nhập -->
+        <div id="authBar" class="hidden flex items-center justify-between rounded-2xl bg-blue-50 px-4 py-3 text-sm">
+          <span>Đang đăng nhập: <strong id="authEmail"></strong></span>
+          <button type="button" onclick="authSignOut()" class="text-blue-600 hover:underline">Đăng xuất</button>
         </div>
 
-        <form id="vendorForm" class="grid gap-5 sm:grid-cols-2" onsubmit="submitVendor(event)">
-          <!-- honeypot chống bot -->
-          <div class="hp-field"><label>Để trống ô này</label><input type="text" id="hp_website" autocomplete="off" tabindex="-1"></div>
-
-          <div class="field sm:col-span-2">
-            <label for="v_name">Tên gánh hàng / người bán *</label>
-            <input id="v_name" required maxlength="200" placeholder="VD: Bánh mì cô Tư">
+        <!-- Cổng đăng nhập/đăng ký - hiện khi CHƯA đăng nhập -->
+        <div id="authGate">
+          <h2 class="text-xl font-semibold text-slate-900">Đăng nhập để đóng góp thông tin</h2>
+          <p class="text-sm text-slate-500 mt-1">
+            Cần có tài khoản email/mật khẩu để gửi thông tin — giúp xác minh đúng người chịu trách nhiệm liên hệ,
+            tránh mạo danh. <strong>Chúng tôi không thu thập số tài khoản ngân hàng.</strong>
+          </p>
+          <div class="tabs mt-4" style="max-width:16rem">
+            <button type="button" id="authTabSignin" class="tab-btn active" onclick="switchAuthTab('signin')">Đăng nhập</button>
+            <button type="button" id="authTabSignup" class="tab-btn" onclick="switchAuthTab('signup')">Đăng ký</button>
           </div>
-
-          <div class="field sm:col-span-2">
-            <label for="v_category">Loại món (chọn icon hiển thị) *</label>
-            <select id="v_category" required>
-              <option value="">-- Chọn loại món --</option>
-              <option>Bánh mì</option>
-              <option>Bắp luộc</option>
-              <option>Cà phê</option>
-              <option>Cà phê trứng</option>
-              <option>Chè</option>
-              <option>Đậu hũ / Tàu hũ</option>
-              <option>Kem</option>
-              <option>Nem chua / Cuốn</option>
-              <option>Nước mía</option>
-              <option>Nước sấu</option>
-              <option>Phở / Bún</option>
-              <option>Sinh tố</option>
-              <option>Trà tắc</option>
-              <option>Xôi</option>
-              <option>Khác</option>
-            </select>
-          </div>
-
-          <div class="field sm:col-span-2">
-            <label for="v_description">Mô tả - bán gì (tuỳ chọn)</label>
-            <textarea id="v_description" rows="2" maxlength="500" placeholder="VD: Bánh mì thịt nướng, bán từ 6h-10h sáng"></textarea>
-          </div>
-
-          <div class="field sm:col-span-2">
-            <label for="v_address">Địa chỉ mô tả *</label>
-            <input id="v_address" required maxlength="300" placeholder="VD: Vỉa hè trước số 12 Lê Lợi, Q.1">
-          </div>
-
-          <div class="field sm:col-span-2">
-            <label for="v_maps">Link Google Maps *</label>
-            <input id="v_maps" type="url" required placeholder="Mở Google Maps > Chia sẻ > Sao chép link, dán vào đây">
-          </div>
-
-          <div class="field">
-            <label for="v_hours">Giờ mở bán (tuỳ chọn)</label>
-            <input id="v_hours" placeholder="VD: 06:30 - 10:30">
-          </div>
-
-          <div class="field">
-            <label for="v_social">Link mạng xã hội (tuỳ chọn)</label>
-            <input id="v_social" type="url" placeholder="Facebook/Instagram/TikTok/YouTube...">
-          </div>
-
-          <div class="field">
-            <label for="v_email">Email hỗ trợ *</label>
-            <input id="v_email" type="email" required placeholder="email-lien-he@vidu.com">
-          </div>
-
-          <div class="field">
-            <label for="v_phone">Số điện thoại hỗ trợ (tuỳ chọn)</label>
-            <input id="v_phone" type="tel" placeholder="09xxxxxxxx">
-          </div>
-
-          <div class="sm:col-span-2 flex items-center justify-between pt-2">
-            <p id="vendorFormMsg" class="text-sm"></p>
-            <button type="submit" id="vendorSubmitBtn" class="btn-flat rounded-full px-6 py-3 font-medium shadow-lg transition hover:-translate-y-0.5">
-              <i class="fa-brands fa-github mr-1"></i> Gửi qua GitHub
+          <form id="authForm" class="space-y-4 mt-4 max-w-sm" onsubmit="submitAuth(event)">
+            <div class="field">
+              <label for="auth_email">Email</label>
+              <input id="auth_email" type="email" required placeholder="ban@vidu.com">
+            </div>
+            <div class="field">
+              <label for="auth_password">Mật khẩu (tối thiểu 8 ký tự)</label>
+              <input id="auth_password" type="password" required minlength="8" placeholder="••••••••">
+            </div>
+            <p id="authMsg" class="text-sm"></p>
+            <button type="submit" id="authSubmitBtn" class="btn-flat w-full rounded-full px-6 py-3 font-medium shadow-lg transition hover:-translate-y-0.5">
+              Đăng nhập
             </button>
+          </form>
+        </div>
+
+        <!-- Form gửi thông tin - hiện khi ĐÃ đăng nhập -->
+        <div id="vendorFormWrap" class="hidden space-y-6">
+          <div>
+            <h2 class="text-xl font-semibold text-slate-900">Đóng góp thông tin một gánh hàng</h2>
+            <p class="text-sm text-slate-500 mt-1">
+              Thông tin gửi lên sẽ ở trạng thái "chờ duyệt" trước khi hiển thị công khai.
+            </p>
+            <p class="text-sm text-amber-600 mt-2">
+              <i class="fas fa-triangle-exclamation mr-1"></i>
+              Lưu ý: email tài khoản của bạn và số điện thoại (nếu điền) sẽ <strong>hiển thị công khai</strong> trên trang để người xem liên hệ.
+            </p>
           </div>
-        </form>
+
+          <form id="vendorForm" class="grid gap-5 sm:grid-cols-2" onsubmit="submitVendor(event)">
+            <div class="field sm:col-span-2">
+              <label for="v_name">Tên gánh hàng / người bán *</label>
+              <input id="v_name" required maxlength="200" placeholder="VD: Bánh mì cô Tư">
+            </div>
+
+            <div class="field sm:col-span-2">
+              <label for="v_category">Loại món (chọn icon hiển thị) *</label>
+              <select id="v_category" required>
+                <option value="">-- Chọn loại món --</option>
+                <option>Bánh mì</option>
+                <option>Bắp luộc</option>
+                <option>Cà phê</option>
+                <option>Cà phê trứng</option>
+                <option>Chè</option>
+                <option>Đậu hũ / Tàu hũ</option>
+                <option>Kem</option>
+                <option>Nem chua / Cuốn</option>
+                <option>Nước mía</option>
+                <option>Nước sấu</option>
+                <option>Phở / Bún</option>
+                <option>Sinh tố</option>
+                <option>Trà tắc</option>
+                <option>Xôi</option>
+                <option>Khác</option>
+              </select>
+            </div>
+
+            <div class="field sm:col-span-2">
+              <label for="v_description">Mô tả - bán gì (tuỳ chọn)</label>
+              <textarea id="v_description" rows="2" maxlength="500" placeholder="VD: Bánh mì thịt nướng, bán từ 6h-10h sáng"></textarea>
+            </div>
+
+            <div class="field sm:col-span-2">
+              <label for="v_address">Địa chỉ mô tả *</label>
+              <input id="v_address" required maxlength="300" placeholder="VD: Vỉa hè trước số 12 Lê Lợi, Q.1">
+            </div>
+
+            <div class="field sm:col-span-2">
+              <label for="v_maps">Link Google Maps *</label>
+              <input id="v_maps" type="url" required placeholder="Mở Google Maps > Chia sẻ > Sao chép link, dán vào đây">
+            </div>
+
+            <div class="field">
+              <label for="v_hours">Giờ mở bán (tuỳ chọn)</label>
+              <input id="v_hours" placeholder="VD: 06:30 - 10:30">
+            </div>
+
+            <div class="field">
+              <label for="v_social">Link mạng xã hội (tuỳ chọn)</label>
+              <input id="v_social" type="url" placeholder="Facebook/Instagram/TikTok/YouTube...">
+            </div>
+
+            <div class="field">
+              <label for="v_phone">Số điện thoại hỗ trợ (tuỳ chọn)</label>
+              <input id="v_phone" type="tel" placeholder="09xxxxxxxx">
+            </div>
+
+            <div class="sm:col-span-2 flex items-center justify-between pt-2">
+              <p id="vendorFormMsg" class="text-sm"></p>
+              <button type="submit" id="vendorSubmitBtn" class="btn-flat rounded-full px-6 py-3 font-medium shadow-lg transition hover:-translate-y-0.5">
+                <i class="fas fa-paper-plane mr-1"></i> Gửi thông tin
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </section>
   </div>
@@ -219,8 +247,13 @@
       return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
-    const GITHUB_REPO = 'findatasolution/hopeseed';
-    const GITHUB_ISSUE_TEMPLATE = 'gop-y-gang-hang.yml';
+    // Đăng nhập thật (email/mật khẩu) qua Neon Auth (Stack Auth) - publishable key,
+    // an toàn để public (không phải secret). Sau khi đăng nhập, form ghi thẳng vào
+    // Neon Data API bằng JWT của phiên đăng nhập - không qua GitHub nữa.
+    const STACK_PROJECT_ID = 'e19df4d4-459f-4eb0-a882-3be4688a2b9e';
+    const STACK_PUBLISHABLE_CLIENT_KEY = 'pck_56th8grc74atk41pae7c4h171th0h223mc4ddpqgttj68';
+    const STACK_API_BASE = 'https://api.stack-auth.com/api/v1';
+    const NEON_DATA_API = 'https://ep-round-bird-ador1751.apirest.c-2.us-east-1.aws.neon.tech/neondb/rest/v1';
 
     let allVendors = [];
     let selectedVendor = null;
@@ -306,7 +339,7 @@
             </div>
             <button type="button" onclick="contactVendor('${escapeHtml(v.contact_email)}','${escapeHtml(v.contact_phone)}')"
               class="mt-1 w-full rounded-full border border-blue-200/60 px-3 py-2 text-xs text-blue-700 hover:bg-blue-50 transition">
-              <i class="fas fa-circle-info mr-1"></i> Liên hệ hỗ trợ
+              <i class="fas fa-circle-info mr-1"></i> Ghi chú mọi thứ về Gánh hàng rong này
             </button>
           </div>
         </div>`;
