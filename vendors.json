@@ -6,7 +6,7 @@
     "maps_url": "https://maps.app.goo.gl/demo1",
     "lat": 10.7769,
     "lng": 106.7009,
-    "image_url": "https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/banh-mi.png",
+    "image_url": "https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/banhmi.png",
     "facebook_url": "https://facebook.com/demo",
     "instagram_url": null,
     "tiktok_url": null,
@@ -27,7 +27,7 @@
     "maps_url": "https://maps.app.goo.gl/demo2",
     "lat": 10.7556,
     "lng": 106.6733,
-    "image_url": "https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/nuoc-giai-khat.png",
+    "image_url": "https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/nuocmia.png",
     "facebook_url": null,
     "instagram_url": null,
     "tiktok_url": null,
@@ -39,6 +39,6 @@
       "matlanh"
     ],
     "opening_hours": "14:00 - 18:00",
-    "category": "Nước giải khát / Sinh tố"
+    "category": "Nước mía"
   }
 ]
