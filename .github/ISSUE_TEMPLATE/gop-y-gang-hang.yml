@@ -1,0 +1,69 @@
+name: "Đóng góp thông tin gánh hàng rong"
+description: "Gửi thông tin một gánh hàng rong để thêm vào bản đồ HopeSeed"
+title: "[Gánh hàng] "
+labels: ["gop-y-gang-hang"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Cảm ơn bạn đã đóng góp! Thông tin gửi lên sẽ ở trạng thái **chờ duyệt** trước khi hiển thị công khai.
+        **Chúng tôi không thu thập số tài khoản ngân hàng** — chỉ cần email/sđt để liên hệ xác minh khi cần.
+  - type: input
+    id: vendor-name
+    attributes:
+      label: Tên gánh hàng / người bán
+      placeholder: "VD: Bánh mì cô Tư"
+    validations:
+      required: true
+  - type: textarea
+    id: vendor-description
+    attributes:
+      label: Mô tả - bán gì
+      placeholder: "VD: Bánh mì thịt nướng, bán từ 6h-10h sáng"
+    validations:
+      required: true
+  - type: input
+    id: vendor-address
+    attributes:
+      label: Địa chỉ mô tả
+      placeholder: "VD: Vỉa hè trước số 12 Lê Lợi, Q.1"
+    validations:
+      required: true
+  - type: input
+    id: vendor-maps
+    attributes:
+      label: Link Google Maps
+      placeholder: "Mở Google Maps > Chia sẻ > Sao chép link"
+    validations:
+      required: true
+  - type: input
+    id: vendor-image
+    attributes:
+      label: Link ảnh (tuỳ chọn)
+      placeholder: "Link ảnh public (từ FB/IG/Google Drive chia sẻ công khai...)"
+  - type: input
+    id: vendor-facebook
+    attributes:
+      label: Link Facebook (tuỳ chọn)
+  - type: input
+    id: vendor-instagram
+    attributes:
+      label: Link Instagram (tuỳ chọn)
+  - type: input
+    id: vendor-tiktok
+    attributes:
+      label: Link TikTok (tuỳ chọn)
+  - type: input
+    id: vendor-email
+    attributes:
+      label: Email hỗ trợ
+      placeholder: "email-lien-he@vidu.com"
+    validations:
+      required: true
+  - type: input
+    id: vendor-phone
+    attributes:
+      label: Số điện thoại hỗ trợ
+      placeholder: "09xxxxxxxx"
+    validations:
+      required: true

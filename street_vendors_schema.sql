@@ -26,20 +26,25 @@ CREATE INDEX IF NOT EXISTS idx_street_vendors_status ON street_vendors(status);
 -- Bật Row Level Security
 ALTER TABLE street_vendors ENABLE ROW LEVEL SECURITY;
 
--- Cho phép bất kỳ ai (vai trò anon của Neon Data API) GỬI thông tin mới.
+-- Neon Data API dùng role "anonymous" (request không kèm JWT) / "authenticated" (có JWT).
+-- Cấp quyền bảng trước, RLS policy bên dưới sẽ giới hạn lại theo dòng (row).
+GRANT SELECT, INSERT ON street_vendors TO anonymous;
+GRANT USAGE, SELECT ON SEQUENCE street_vendors_id_seq TO anonymous;
+
+-- Cho phép bất kỳ ai (chưa đăng nhập) GỬI thông tin mới.
 -- status luôn ép về 'pending' bất kể client gửi gì, để tránh tự duyệt bài của mình.
 CREATE POLICY anon_insert_pending ON street_vendors
   FOR INSERT
-  TO anon
+  TO anonymous
   WITH CHECK (status = 'pending');
 
 -- Cho phép bất kỳ ai chỉ XEM các gánh hàng đã được duyệt (approved).
 CREATE POLICY anon_select_approved ON street_vendors
   FOR SELECT
-  TO anon
+  TO anonymous
   USING (status = 'approved');
 
--- Không cấp quyền UPDATE/DELETE cho anon.
+-- Không cấp quyền UPDATE/DELETE cho anonymous.
 -- Duyệt bài (đổi status -> 'approved') thực hiện thủ công trong Neon Console -> Table Editor,
 -- hoặc bằng SQL Editor:
 --   UPDATE street_vendors SET status = 'approved' WHERE id = <id>;

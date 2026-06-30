@@ -1,13 +1,11 @@
-// Cấu hình kết nối Neon Data API + ImageKit cho trang "Gánh hàng rong".
-// Các giá trị dưới đây an toàn để public (đã bị giới hạn quyền bởi Row Level Security
-// trong street_vendors_schema.sql) — KHÔNG được dán private key/secret key vào đây.
+// Cấu hình cho trang "Gánh hàng rong".
+// Không có Neon Data API/JWT ở đây nữa — việc gửi thông tin đi qua GitHub Issue Form
+// (xem ganghangrong.html + .github/ISSUE_TEMPLATE/gop-y-gang-hang.yml),
+// và scripts/sync_vendors.py ghi dữ liệu đã duyệt ra vendors.json tĩnh.
 
-window.HOPESEED_NEON_DATA_API = "https://YOUR-PROJECT.dataapi.neon.tech"; // Neon Console -> Settings -> Data API
-window.HOPESEED_NEON_ANON_KEY = "YOUR_ANON_KEY";                          // Neon Console -> Settings -> Data API -> anon key
-
-// Endpoint ImageKit dùng để tối ưu ảnh từ link gốc (không upload trực tiếp, không cần private key).
-// Ví dụ: https://ik.imagekit.io/o2u9hny2s
-window.HOPESEED_IMAGEKIT_ENDPOINT = "https://ik.imagekit.io/YOUR_IMAGEKIT_ID";
+// Endpoint ImageKit dùng để tối ưu ảnh từ link gốc (proxy URL, không upload trực tiếp,
+// không cần private key nên an toàn để public trong file này).
+window.HOPESEED_IMAGEKIT_ENDPOINT = "https://ik.imagekit.io/o2u9hny2s";
 
 // Trả về URL ảnh đã qua ImageKit (resize/optimize) từ 1 URL ảnh gốc bất kỳ.
 window.hopeseedImageProxy = function (originalUrl, width) {

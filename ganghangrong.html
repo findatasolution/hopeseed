@@ -93,7 +93,8 @@
         <div>
           <h2 class="text-xl font-semibold text-slate-900">Đóng góp thông tin một gánh hàng</h2>
           <p class="text-sm text-slate-500 mt-1">
-            Thông tin gửi lên sẽ ở trạng thái "chờ duyệt" trước khi hiển thị công khai.
+            Điền form bên dưới rồi bấm Gửi — bạn sẽ được chuyển sang GitHub (đã điền sẵn nội dung) để xác nhận gửi,
+            chỉ cần tài khoản GitHub miễn phí, không cần biết code. Thông tin sẽ ở trạng thái "chờ duyệt" trước khi hiển thị công khai.
             <strong>Chúng tôi không thu thập số tài khoản ngân hàng</strong> — chỉ cần email/sđt để liên hệ xác minh khi cần.
           </p>
         </div>
@@ -155,7 +156,7 @@
           <div class="sm:col-span-2 flex items-center justify-between pt-2">
             <p id="vendorFormMsg" class="text-sm"></p>
             <button type="submit" id="vendorSubmitBtn" class="btn-flat rounded-full px-6 py-3 font-medium shadow-lg transition hover:-translate-y-0.5">
-              <i class="fas fa-paper-plane mr-1"></i> Gửi thông tin
+              <i class="fa-brands fa-github mr-1"></i> Gửi qua GitHub
             </button>
           </div>
         </form>
@@ -168,13 +169,8 @@
       return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
 
-    function neonHeaders() {
-      return {
-        'apikey': window.HOPESEED_NEON_ANON_KEY,
-        'Authorization': `Bearer ${window.HOPESEED_NEON_ANON_KEY}`,
-        'Content-Type': 'application/json'
-      };
-    }
+    const GITHUB_REPO = 'findatasolution/hopeseed';
+    const GITHUB_ISSUE_TEMPLATE = 'gop-y-gang-hang.yml';
 
     function vendorCard(v) {
       const img = v.image_url ? window.hopeseedImageProxy(v.image_url, 480) : 'https://ik.imagekit.io/o2u9hny2s/hopeseed/LOGO8.png';
@@ -214,8 +210,9 @@
       const grid = document.getElementById('vendorGrid');
       grid.innerHTML = '<p class="text-sm text-slate-500">Đang tải danh sách...</p>';
       try {
-        const url = `${window.HOPESEED_NEON_DATA_API}/street_vendors?status=eq.approved&order=created_at.desc`;
-        const res = await fetch(url, { headers: neonHeaders() });
+        // Đọc file tĩnh vendors.json (được scripts/sync_vendors.py tự sinh từ các gánh hàng
+        // đã duyệt trong Neon). Không cần auth, không gọi DB trực tiếp từ trình duyệt.
+        const res = await fetch(`vendors.json?t=${Date.now()}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const rows = await res.json();
         if (!rows.length) {
@@ -229,12 +226,15 @@
       }
     }
 
-    async function submitVendor(ev) {
+    // Không có backend nào nhận POST công khai (tránh phải lộ secret/API key).
+    // Form ở đây chỉ thu thập + validate, sau đó chuyển người dùng sang GitHub Issue Form
+    // (đã điền sẵn nội dung) để gửi - chỉ cần tài khoản GitHub miễn phí, không cần biết Git/code.
+    // scripts/sync_vendors.py sẽ tự động đọc issue mới và ghi vào Neon (status='pending').
+    function submitVendor(ev) {
       ev.preventDefault();
       const msg = document.getElementById('vendorFormMsg');
-      const btn = document.getElementById('vendorSubmitBtn');
 
-      // honeypot: nếu bot điền vào field ẩn -> âm thầm bỏ qua
+      // honeypot: nếu bot điền vào field ẩn -> âm thầm bỏ qua, không redirect
       if (document.getElementById('hp_website').value.trim() !== '') {
         msg.textContent = 'Đã gửi. Cảm ơn bạn!';
         msg.className = 'text-sm text-green-600';
@@ -242,43 +242,27 @@
         return;
       }
 
-      const payload = {
-        name: document.getElementById('v_name').value.trim(),
-        description: document.getElementById('v_description').value.trim(),
-        address: document.getElementById('v_address').value.trim(),
-        maps_url: document.getElementById('v_maps').value.trim(),
-        image_url: document.getElementById('v_image').value.trim() || null,
-        facebook_url: document.getElementById('v_facebook').value.trim() || null,
-        instagram_url: document.getElementById('v_instagram').value.trim() || null,
-        tiktok_url: document.getElementById('v_tiktok').value.trim() || null,
-        contact_email: document.getElementById('v_email').value.trim(),
-        contact_phone: document.getElementById('v_phone').value.trim(),
-        status: 'pending'
+      const fields = {
+        'vendor-name': document.getElementById('v_name').value.trim(),
+        'vendor-description': document.getElementById('v_description').value.trim(),
+        'vendor-address': document.getElementById('v_address').value.trim(),
+        'vendor-maps': document.getElementById('v_maps').value.trim(),
+        'vendor-image': document.getElementById('v_image').value.trim(),
+        'vendor-facebook': document.getElementById('v_facebook').value.trim(),
+        'vendor-instagram': document.getElementById('v_instagram').value.trim(),
+        'vendor-tiktok': document.getElementById('v_tiktok').value.trim(),
+        'vendor-email': document.getElementById('v_email').value.trim(),
+        'vendor-phone': document.getElementById('v_phone').value.trim()
       };
 
-      btn.disabled = true;
-      btn.classList.add('opacity-60');
-      msg.textContent = '';
-
-      try {
-        const url = `${window.HOPESEED_NEON_DATA_API}/street_vendors`;
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { ...neonHeaders(), 'Prefer': 'return=minimal' },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        msg.textContent = 'Cảm ơn! Thông tin đang chờ duyệt và sẽ sớm xuất hiện trên danh sách.';
-        msg.className = 'text-sm text-green-600';
-        document.getElementById('vendorForm').reset();
-      } catch (err) {
-        console.error(err);
-        msg.textContent = 'Gửi thất bại, vui lòng thử lại sau.';
-        msg.className = 'text-sm text-red-500';
-      } finally {
-        btn.disabled = false;
-        btn.classList.remove('opacity-60');
+      const params = new URLSearchParams({ template: GITHUB_ISSUE_TEMPLATE });
+      for (const [key, value] of Object.entries(fields)) {
+        if (value) params.set(key, value);
       }
+
+      msg.textContent = 'Đang chuyển sang GitHub để bạn xác nhận gửi...';
+      msg.className = 'text-sm text-blue-600';
+      window.open(`https://github.com/${GITHUB_REPO}/issues/new?${params.toString()}`, '_blank', 'noopener');
     }
 
     loadVendors();
