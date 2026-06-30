@@ -7,33 +7,13 @@ body:
     attributes:
       value: |
         Cảm ơn bạn đã đóng góp! Thông tin gửi lên sẽ ở trạng thái **chờ duyệt** trước khi hiển thị công khai.
-        **Chúng tôi không thu thập số tài khoản ngân hàng** — chỉ cần email/sđt để liên hệ xác minh khi cần.
+        **Chúng tôi không thu thập số tài khoản ngân hàng.**
+        Lưu ý: email và số điện thoại bạn điền bên dưới sẽ **hiển thị công khai** trên trang để người xem liên hệ.
   - type: input
     id: vendor-name
     attributes:
       label: Tên gánh hàng / người bán
       placeholder: "VD: Bánh mì cô Tư"
-    validations:
-      required: true
-  - type: textarea
-    id: vendor-description
-    attributes:
-      label: Mô tả - bán gì
-      placeholder: "VD: Bánh mì thịt nướng, bán từ 6h-10h sáng"
-    validations:
-      required: true
-  - type: input
-    id: vendor-address
-    attributes:
-      label: Địa chỉ mô tả
-      placeholder: "VD: Vỉa hè trước số 12 Lê Lợi, Q.1"
-    validations:
-      required: true
-  - type: input
-    id: vendor-maps
-    attributes:
-      label: Link Google Maps
-      placeholder: "Mở Google Maps > Chia sẻ > Sao chép link"
     validations:
       required: true
   - type: dropdown
@@ -58,23 +38,35 @@ body:
         - "Khác"
     validations:
       required: true
+  - type: textarea
+    id: vendor-description
+    attributes:
+      label: Mô tả - bán gì (tuỳ chọn)
+      placeholder: "VD: Bánh mì thịt nướng, bán từ 6h-10h sáng"
+  - type: input
+    id: vendor-address
+    attributes:
+      label: Địa chỉ mô tả
+      placeholder: "VD: Vỉa hè trước số 12 Lê Lợi, Q.1"
+    validations:
+      required: true
+  - type: input
+    id: vendor-maps
+    attributes:
+      label: Link Google Maps
+      placeholder: "Mở Google Maps > Chia sẻ > Sao chép link"
+    validations:
+      required: true
   - type: input
     id: vendor-hours
     attributes:
       label: Giờ mở bán (tuỳ chọn)
       placeholder: "VD: 06:30 - 10:30"
   - type: input
-    id: vendor-facebook
+    id: vendor-social
     attributes:
-      label: Link Facebook (tuỳ chọn)
-  - type: input
-    id: vendor-instagram
-    attributes:
-      label: Link Instagram (tuỳ chọn)
-  - type: input
-    id: vendor-tiktok
-    attributes:
-      label: Link TikTok (tuỳ chọn)
+      label: Link mạng xã hội (tuỳ chọn)
+      placeholder: "Facebook/Instagram/TikTok/YouTube..."
   - type: input
     id: vendor-email
     attributes:
@@ -85,7 +77,5 @@ body:
   - type: input
     id: vendor-phone
     attributes:
-      label: Số điện thoại hỗ trợ
+      label: Số điện thoại hỗ trợ (tuỳ chọn)
       placeholder: "09xxxxxxxx"
-    validations:
-      required: true

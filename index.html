@@ -141,7 +141,11 @@
           <p class="text-sm text-slate-500 mt-1">
             Điền form bên dưới rồi bấm Gửi — bạn sẽ được chuyển sang GitHub (đã điền sẵn nội dung) để xác nhận gửi,
             chỉ cần tài khoản GitHub miễn phí, không cần biết code. Thông tin sẽ ở trạng thái "chờ duyệt" trước khi hiển thị công khai.
-            <strong>Chúng tôi không thu thập số tài khoản ngân hàng</strong> — chỉ cần email/sđt để liên hệ xác minh khi cần.
+            <strong>Chúng tôi không thu thập số tài khoản ngân hàng.</strong>
+          </p>
+          <p class="text-sm text-amber-600 mt-2">
+            <i class="fas fa-triangle-exclamation mr-1"></i>
+            Lưu ý: email và số điện thoại bạn cung cấp bên dưới sẽ <strong>hiển thị công khai</strong> trên trang để người xem liên hệ.
           </p>
         </div>
 
@@ -155,21 +159,6 @@
           </div>
 
           <div class="field sm:col-span-2">
-            <label for="v_description">Mô tả - bán gì *</label>
-            <textarea id="v_description" rows="2" required maxlength="500" placeholder="VD: Bánh mì thịt nướng, bán từ 6h-10h sáng"></textarea>
-          </div>
-
-          <div class="field sm:col-span-2">
-            <label for="v_address">Địa chỉ mô tả *</label>
-            <input id="v_address" required maxlength="300" placeholder="VD: Vỉa hè trước số 12 Lê Lợi, Q.1">
-          </div>
-
-          <div class="field sm:col-span-2">
-            <label for="v_maps">Link Google Maps *</label>
-            <input id="v_maps" type="url" required placeholder="Mở Google Maps > Chia sẻ > Sao chép link, dán vào đây">
-          </div>
-
-          <div class="field">
             <label for="v_category">Loại món (chọn icon hiển thị) *</label>
             <select id="v_category" required>
               <option value="">-- Chọn loại món --</option>
@@ -191,24 +180,29 @@
             </select>
           </div>
 
+          <div class="field sm:col-span-2">
+            <label for="v_description">Mô tả - bán gì (tuỳ chọn)</label>
+            <textarea id="v_description" rows="2" maxlength="500" placeholder="VD: Bánh mì thịt nướng, bán từ 6h-10h sáng"></textarea>
+          </div>
+
+          <div class="field sm:col-span-2">
+            <label for="v_address">Địa chỉ mô tả *</label>
+            <input id="v_address" required maxlength="300" placeholder="VD: Vỉa hè trước số 12 Lê Lợi, Q.1">
+          </div>
+
+          <div class="field sm:col-span-2">
+            <label for="v_maps">Link Google Maps *</label>
+            <input id="v_maps" type="url" required placeholder="Mở Google Maps > Chia sẻ > Sao chép link, dán vào đây">
+          </div>
+
           <div class="field">
             <label for="v_hours">Giờ mở bán (tuỳ chọn)</label>
             <input id="v_hours" placeholder="VD: 06:30 - 10:30">
           </div>
 
           <div class="field">
-            <label for="v_facebook">Link Facebook (tuỳ chọn)</label>
-            <input id="v_facebook" type="url" placeholder="https://facebook.com/...">
-          </div>
-
-          <div class="field">
-            <label for="v_instagram">Link Instagram (tuỳ chọn)</label>
-            <input id="v_instagram" type="url" placeholder="https://instagram.com/...">
-          </div>
-
-          <div class="field">
-            <label for="v_tiktok">Link TikTok (tuỳ chọn)</label>
-            <input id="v_tiktok" type="url" placeholder="https://tiktok.com/@...">
+            <label for="v_social">Link mạng xã hội (tuỳ chọn)</label>
+            <input id="v_social" type="url" placeholder="Facebook/Instagram/TikTok/YouTube...">
           </div>
 
           <div class="field">
@@ -217,8 +211,8 @@
           </div>
 
           <div class="field">
-            <label for="v_phone">Số điện thoại hỗ trợ *</label>
-            <input id="v_phone" type="tel" required placeholder="09xxxxxxxx">
+            <label for="v_phone">Số điện thoại hỗ trợ (tuỳ chọn)</label>
+            <input id="v_phone" type="tel" placeholder="09xxxxxxxx">
           </div>
 
           <div class="sm:col-span-2 flex items-center justify-between pt-2">
@@ -257,11 +251,8 @@
     }
 
     function socialIcons(v) {
-      return [
-        v.facebook_url ? `<a href="${escapeHtml(v.facebook_url)}" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-800"><i class="fa-brands fa-facebook fa-lg"></i></a>` : '',
-        v.instagram_url ? `<a href="${escapeHtml(v.instagram_url)}" target="_blank" rel="noopener" class="text-pink-500 hover:text-pink-700"><i class="fa-brands fa-instagram fa-lg"></i></a>` : '',
-        v.tiktok_url ? `<a href="${escapeHtml(v.tiktok_url)}" target="_blank" rel="noopener" class="text-slate-800 hover:text-black"><i class="fa-brands fa-tiktok fa-lg"></i></a>` : ''
-      ].join(' ');
+      if (!v.social_url) return '';
+      return `<a href="${escapeHtml(v.social_url)}" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-800"><i class="fas fa-share-nodes fa-lg"></i></a>`;
     }
 
     function tagChips(v) {
@@ -403,9 +394,7 @@
         'vendor-maps': document.getElementById('v_maps').value.trim(),
         'vendor-category': document.getElementById('v_category').value.trim(),
         'vendor-hours': document.getElementById('v_hours').value.trim(),
-        'vendor-facebook': document.getElementById('v_facebook').value.trim(),
-        'vendor-instagram': document.getElementById('v_instagram').value.trim(),
-        'vendor-tiktok': document.getElementById('v_tiktok').value.trim(),
+        'vendor-social': document.getElementById('v_social').value.trim(),
         'vendor-email': document.getElementById('v_email').value.trim(),
         'vendor-phone': document.getElementById('v_phone').value.trim()
       };

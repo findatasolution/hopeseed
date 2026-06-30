@@ -11,12 +11,10 @@ CREATE TABLE IF NOT EXISTS street_vendors (
   maps_url        TEXT NOT NULL,              -- link Google Maps (chia sẻ địa điểm)
   lat             DOUBLE PRECISION,
   lng             DOUBLE PRECISION,
-  image_url       TEXT,                       -- link ảnh gốc (hiển thị qua ImageKit proxy)
-  facebook_url    TEXT,
-  instagram_url   TEXT,
-  tiktok_url      TEXT,
-  contact_email   TEXT NOT NULL,              -- email hỗ trợ (KHÔNG lưu số tài khoản ngân hàng)
-  contact_phone   TEXT NOT NULL,              -- sđt hỗ trợ
+  image_url       TEXT,                       -- icon theo "Loại món" (map sẵn trong sync_vendors.py)
+  social_url      TEXT,                       -- 1 link mạng xã hội bất kỳ (FB/IG/TikTok/YouTube...)
+  contact_email   TEXT NOT NULL,              -- email hỗ trợ - HIỂN THỊ CÔNG KHAI (KHÔNG lưu số tài khoản ngân hàng)
+  contact_phone   TEXT,                       -- sđt hỗ trợ (tuỳ chọn) - HIỂN THỊ CÔNG KHAI nếu có
   status          TEXT NOT NULL DEFAULT 'pending', -- pending | approved | rejected
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   tags            TEXT[],                     -- vd: {banhmi,comtam} - điền tay trong Neon Console
