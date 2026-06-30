@@ -5,7 +5,7 @@
   <title>Gánh hàng rong | HopeSeed</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap&subset=vietnamese" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxuvwv/b4jzlGC62Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="icon" href="https://ik.imagekit.io/o2u9hny2s/hopeseed/LOGO8.png" type="image/png">
 
@@ -20,7 +20,7 @@
     }
     html, body { width: 100%; overflow-x: hidden; }
     body{
-      font-family: 'Plus Jakarta Sans','Inter','Be Vietnam Pro','Noto Sans','Segoe UI',system-ui,-apple-system,sans-serif;
+      font-family: 'Nunito','Be Vietnam Pro','Noto Sans','Segoe UI',system-ui,-apple-system,sans-serif;
       background: linear-gradient(125deg, #e0f2fe 0%, #bae6fd 45%, #ffffff 100%); color: #083344;
     }
     .glass-card {
@@ -54,7 +54,7 @@
   <div class="relative z-10">
     <!-- HERO -->
     <header class="max-w-6xl mx-auto px-6 pt-8">
-      <div class="glass-card rounded-3xl p-6 md:p-8 grid gap-6 md:grid-cols-[1.2fr,0.8fr] items-center">
+      <div class="grid gap-6 md:grid-cols-[1.2fr,0.8fr] items-center">
         <div class="space-y-4">
           <h1 class="text-3xl sm:text-4xl font-semibold text-slate-900">Bản đồ hương vị yêu thương</h1>
           <p class="text-base text-slate-600 leading-7 max-w-xl">
@@ -63,19 +63,27 @@
           </p>
         </div>
         <img id="heroIllustration" src="https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/maincharactor.png"
-          alt="Gánh hàng rong" class="w-48 sm:w-72 mx-auto md:ml-auto md:mr-0 object-contain" loading="lazy"/>
+          alt="Gánh hàng rong" class="w-72 sm:w-[27rem] mx-auto md:ml-auto md:mr-0 object-contain" loading="lazy"/>
       </div>
     </header>
 
     <!-- TABS -->
     <section class="max-w-6xl mx-auto px-6 mt-8">
-      <div class="tabs">
-        <button type="button" id="tabBtnMap" class="tab-btn active" onclick="switchTab('map')">
-          <i class="fas fa-map-location-dot mr-1"></i> Bản đồ
-        </button>
-        <button type="button" id="tabBtnForm" class="tab-btn" onclick="switchTab('form')">
-          <i class="fas fa-pen mr-1"></i> Đóng góp thông tin
-        </button>
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div class="tabs">
+          <button type="button" id="tabBtnMap" class="tab-btn active" onclick="switchTab('map')">
+            <i class="fas fa-map-location-dot mr-1"></i> Bản đồ
+          </button>
+          <button type="button" id="tabBtnForm" class="tab-btn" onclick="switchTab('form')">
+            <i class="fas fa-pen mr-1"></i> Đóng góp thông tin
+          </button>
+        </div>
+        <div class="relative flex-1">
+          <i class="fas fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input id="searchInput" type="text" placeholder="Tìm kiếm gánh hàng rong..."
+            oninput="handleSearch(this.value)"
+            class="w-full rounded-full border border-slate-200 bg-white pl-11 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/>
+        </div>
       </div>
     </section>
 
@@ -95,17 +103,8 @@
           </div>
         </div>
 
-        <!-- RIGHT: search + map -->
+        <!-- RIGHT: map -->
         <div class="space-y-6">
-          <div class="glass-card rounded-3xl p-4">
-            <div class="relative">
-              <i class="fas fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-              <input id="searchInput" type="text" placeholder="Tìm kiếm gánh hàng rong..."
-                oninput="handleSearch(this.value)"
-                class="w-full rounded-full border border-slate-200 bg-white pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/>
-            </div>
-          </div>
-
           <div class="glass-card rounded-3xl p-2 overflow-hidden">
             <iframe id="mapFrame" class="w-full rounded-2xl" height="280" style="border:0"
               loading="lazy" referrerpolicy="no-referrer-when-downgrade"
@@ -245,7 +244,7 @@
     function vendorRowHtml(v, idx) {
       return `
         <div class="vendor-row flex items-center gap-3 rounded-2xl border border-transparent p-3" onclick="selectVendor(${idx})">
-          <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-14 w-14 object-contain flex-shrink-0"/>
+          <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-[84px] w-[84px] object-contain flex-shrink-0"/>
           <div class="min-w-0 flex-1">
             <p class="font-semibold text-slate-900 truncate">${escapeHtml(v.name)}</p>
             ${v.opening_hours ? `<p class="text-xs text-slate-500">${escapeHtml(v.opening_hours)}</p>` : ''}
@@ -282,7 +281,7 @@
       detail.classList.remove('hidden');
       detail.innerHTML = `
         <div class="flex items-start gap-4">
-          <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-20 w-20 object-contain flex-shrink-0"/>
+          <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-[120px] w-[120px] object-contain flex-shrink-0"/>
           <div class="min-w-0 flex-1 space-y-1">
             <div class="flex items-center justify-between gap-2">
               <h3 class="font-semibold text-slate-900 text-lg">${escapeHtml(v.name)}</h3>
