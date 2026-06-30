@@ -93,18 +93,11 @@
     }
     .mobile-nav-btn {
       display: flex; flex-direction: column; align-items: center; gap: 3px;
-      padding: 6px 10px; border-radius: 14px; color: #64748b; font-size: 11px; font-weight: 700;
+      padding: 8px 10px; border-radius: 14px; color: #64748b; font-size: 11px; font-weight: 700;
       flex: 1 1 0; min-width: 0;
     }
-    .mobile-nav-btn i { font-size: 18px; }
-    .mobile-nav-btn.active { color: var(--accent-strong); }
-    .mobile-nav-fab {
-      display: flex; align-items: center; justify-content: center;
-      width: 52px; height: 52px; border-radius: 9999px; flex-shrink: 0;
-      background: var(--accent); color: #fff; font-size: 18px;
-      box-shadow: 0 12px 26px rgba(2,132,199,.4);
-      margin: -26px 6px 0;
-    }
+    .mobile-nav-btn .nav-icon { width: 21px; height: 21px; }
+    .mobile-nav-btn.active { color: var(--accent-strong); background: var(--accent-soft); }
 
     /* ===== Mobile/Tablet (< 1024px): toolbar trên cùng chỉ còn ô tìm kiếm, điều hướng
        chuyển xuống bottom nav, panel Bản đồ tách 2 chế độ Danh sách/Bản đồ riêng,
@@ -183,16 +176,29 @@
     <nav id="mobileBottomBar">
       <div class="mobile-bar">
         <button type="button" class="mobile-nav-btn active" data-tab="map" data-subview="list" onclick="switchTab('map','list')">
-          <i class="fas fa-list"></i><span>Danh sách</span>
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+          <span>Danh sách</span>
         </button>
         <button type="button" class="mobile-nav-btn" data-tab="map" data-subview="map" onclick="switchTab('map','map')">
-          <i class="fas fa-map-location-dot"></i><span>Bản đồ</span>
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+          </svg>
+          <span>Bản đồ</span>
         </button>
-        <button type="button" class="mobile-nav-fab" data-tab="form" onclick="switchTab('form')" title="Đóng góp thông tin">
-          <i class="fas fa-plus"></i>
+        <button type="button" class="mobile-nav-btn" data-tab="form" onclick="switchTab('form')">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span>Đóng góp</span>
         </button>
         <button type="button" class="mobile-nav-btn" data-tab="review" onclick="switchTab('review')">
-          <i class="fas fa-check-double"></i><span>Xét duyệt</span>
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <span>Xét duyệt</span>
         </button>
       </div>
     </nav>
