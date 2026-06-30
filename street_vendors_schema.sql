@@ -18,7 +18,10 @@ CREATE TABLE IF NOT EXISTS street_vendors (
   contact_email   TEXT NOT NULL,              -- email hỗ trợ (KHÔNG lưu số tài khoản ngân hàng)
   contact_phone   TEXT NOT NULL,              -- sđt hỗ trợ
   status          TEXT NOT NULL DEFAULT 'pending', -- pending | approved | rejected
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+  tags            TEXT[],                     -- vd: {banhmi,comtam} - điền tay trong Neon Console
+  opening_hours   TEXT,                       -- vd: "06:30 - 10:30" - điền tay trong Neon Console
+  category        TEXT                        -- loại món, dùng để chọn icon cố định trên giao diện
 );
 
 CREATE INDEX IF NOT EXISTS idx_street_vendors_status ON street_vendors(status);

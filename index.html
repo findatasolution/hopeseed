@@ -33,11 +33,11 @@
     .btn-flat { background-color: #3788bb; color: #fff; transition: all .25s ease; }
     .btn-flat:hover { background-color: #120747; }
     .field label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: #475569; }
-    .field input, .field textarea {
+    .field input, .field textarea, .field select {
       width: 100%; border-radius: 1rem; border: 1px solid #e2e8f0; background: #fff;
       padding: .6rem 1rem; font-size: .9rem; margin-top: .35rem;
     }
-    .field input:focus, .field textarea:focus { outline: none; border-color: rgba(2,132,199,.7); box-shadow: 0 0 0 3px rgba(2,132,199,.15); }
+    .field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: rgba(2,132,199,.7); box-shadow: 0 0 0 3px rgba(2,132,199,.15); }
     /* honeypot - ẩn khỏi người dùng thật, bot tự động vẫn điền thấy */
     .hp-field { position: absolute; left: -9999px; top: -9999px; }
     /* Tabs */
@@ -46,6 +46,9 @@
     .tab-btn.active{ background:#fff; color:#0f172a; box-shadow: 0 6px 18px rgba(2,132,199,.12); }
     .tab-panel{ display:none; }
     .tab-panel.active{ display:block; }
+    .vendor-row{ cursor:pointer; transition: background .15s ease, border-color .15s ease; }
+    .vendor-row:hover, .vendor-row.selected{ background:rgba(2,132,199,.06); border-color: rgba(2,132,199,.35); }
+    .tag-chip{ font-size: 11px; padding: 2px 10px; border-radius:9999px; background:#eff6ff; color:#1d4ed8; }
   </style>
 </head>
 <body class="relative text-slate-700">
@@ -62,18 +65,25 @@
             <p class="text-base font-semibold text-slate-900">Gánh hàng rong</p>
           </div>
         </div>
+        <button type="button" onclick="switchTab('form')" class="btn-flat rounded-full px-5 py-2.5 text-sm font-medium shadow-lg transition hover:-translate-y-0.5">
+          <i class="fas fa-heart mr-1"></i> Đóng góp thông tin
+        </button>
       </div>
     </nav>
 
     <!-- HERO -->
     <header class="max-w-6xl mx-auto px-6 pt-12">
-      <div class="glass-card rounded-3xl p-6 md:p-8 space-y-3">
-        <span class="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1 text-sm font-medium text-blue-600 shadow-sm ring-1 ring-blue-200">#ganghangrong</span>
-        <h1 class="text-3xl sm:text-4xl font-semibold text-slate-900">Bản đồ gánh hàng rong</h1>
-        <p class="text-base text-slate-600 leading-7 max-w-3xl">
-          Nơi cộng đồng cùng nhau lưu lại địa chỉ, hình ảnh và mạng xã hội của các gánh hàng rong quen thuộc —
-          giúp mọi người dễ dàng tìm đến ủng hộ. Dự án phi lợi nhuận, không thu phí, không thu thập thông tin tài khoản ngân hàng.
-        </p>
+      <div class="glass-card rounded-3xl p-6 md:p-8 grid gap-6 md:grid-cols-[1.2fr,0.8fr] items-center">
+        <div class="space-y-3">
+          <span class="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-1 text-sm font-medium text-blue-600 shadow-sm ring-1 ring-blue-200">#ganghangrong</span>
+          <h1 class="text-3xl sm:text-4xl font-semibold text-slate-900">Bản đồ gánh hàng rong</h1>
+          <p class="text-base text-slate-600 leading-7 max-w-xl">
+            Nơi cộng đồng cùng nhau lưu lại địa chỉ, hình ảnh và mạng xã hội của các gánh hàng rong quen thuộc —
+            giúp mọi người dễ dàng tìm đến ủng hộ. Dự án phi lợi nhuận, không thu phí, không thu thập thông tin tài khoản ngân hàng.
+          </p>
+        </div>
+        <img src="https://ik.imagekit.io/o2u9hny2s/hopeseed/LOGO8.png"
+          alt="Gánh hàng rong" class="w-full max-w-xs mx-auto md:max-w-none object-contain" loading="lazy"/>
       </div>
     </header>
 
@@ -91,13 +101,36 @@
 
     <!-- TAB: MAP / LIST -->
     <section id="panelMap" class="tab-panel active max-w-6xl mx-auto px-6 mt-6 mb-16">
-      <div class="glass-card rounded-3xl p-6 md:p-8 space-y-6">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl font-semibold text-slate-900">Danh sách gánh hàng đã duyệt</h2>
-          <button onclick="loadVendors()" class="text-sm text-blue-600 hover:underline"><i class="fas fa-rotate-right mr-1"></i>Tải lại</button>
+      <div class="grid gap-6 lg:grid-cols-[1.5fr,1fr] items-start">
+        <!-- LEFT: detail + list -->
+        <div class="glass-card rounded-3xl p-6 md:p-8 space-y-6">
+          <div id="vendorDetail" class="hidden rounded-2xl border border-blue-200/60 bg-white/90 p-4 space-y-3"></div>
+
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-semibold text-slate-900">Danh sách gánh hàng đã duyệt</h2>
+            <button onclick="loadVendors()" class="text-sm text-blue-600 hover:underline"><i class="fas fa-rotate-right mr-1"></i>Tải lại</button>
+          </div>
+          <div id="vendorList" class="space-y-3">
+            <p class="text-sm text-slate-500">Đang tải danh sách...</p>
+          </div>
         </div>
-        <div id="vendorGrid" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <p class="text-sm text-slate-500">Đang tải danh sách...</p>
+
+        <!-- RIGHT: search + map -->
+        <div class="space-y-6">
+          <div class="glass-card rounded-3xl p-4">
+            <div class="relative">
+              <i class="fas fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input id="searchInput" type="text" placeholder="Tìm kiếm gánh hàng rong..."
+                oninput="handleSearch(this.value)"
+                class="w-full rounded-full border border-slate-200 bg-white pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-3xl p-2 overflow-hidden">
+            <iframe id="mapFrame" class="w-full rounded-2xl" height="280" style="border:0"
+              loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+              src="https://www.google.com/maps?q=Vietnam&z=5&output=embed"></iframe>
+          </div>
         </div>
       </div>
     </section>
@@ -139,8 +172,30 @@
           </div>
 
           <div class="field">
-            <label for="v_image">Link ảnh (tuỳ chọn)</label>
-            <input id="v_image" type="url" placeholder="Link ảnh public (từ FB/IG/Google Drive chia sẻ công khai...)">
+            <label for="v_category">Loại món (chọn icon hiển thị) *</label>
+            <select id="v_category" required>
+              <option value="">-- Chọn loại món --</option>
+              <option>Bánh mì</option>
+              <option>Bắp luộc</option>
+              <option>Cà phê</option>
+              <option>Cà phê trứng</option>
+              <option>Chè</option>
+              <option>Đậu hũ / Tàu hũ</option>
+              <option>Kem</option>
+              <option>Nem chua / Cuốn</option>
+              <option>Nước mía</option>
+              <option>Nước sấu</option>
+              <option>Phở / Bún</option>
+              <option>Sinh tố</option>
+              <option>Trà tắc</option>
+              <option>Xôi</option>
+              <option>Khác</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="v_hours">Giờ mở bán (tuỳ chọn)</label>
+            <input id="v_hours" placeholder="VD: 06:30 - 10:30">
           </div>
 
           <div class="field">
@@ -187,6 +242,9 @@
     const GITHUB_REPO = 'findatasolution/hopeseed';
     const GITHUB_ISSUE_TEMPLATE = 'gop-y-gang-hang.yml';
 
+    let allVendors = [];
+    let selectedVendor = null;
+
     function switchTab(tab) {
       document.getElementById('panelMap').classList.toggle('active', tab === 'map');
       document.getElementById('panelForm').classList.toggle('active', tab === 'form');
@@ -194,64 +252,138 @@
       document.getElementById('tabBtnForm').classList.toggle('active', tab === 'form');
     }
 
-    function vendorCard(v) {
-      const img = v.image_url ? window.hopeseedImageProxy(v.image_url, 480) : 'https://ik.imagekit.io/o2u9hny2s/hopeseed/LOGO8.png';
-      const socials = [
+    function vendorIcon(v) {
+      return v.image_url ? window.hopeseedImageProxy(v.image_url, 120) : 'https://ik.imagekit.io/o2u9hny2s/hopeseed/LOGO8.png';
+    }
+
+    function socialIcons(v) {
+      return [
         v.facebook_url ? `<a href="${escapeHtml(v.facebook_url)}" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-800"><i class="fa-brands fa-facebook fa-lg"></i></a>` : '',
         v.instagram_url ? `<a href="${escapeHtml(v.instagram_url)}" target="_blank" rel="noopener" class="text-pink-500 hover:text-pink-700"><i class="fa-brands fa-instagram fa-lg"></i></a>` : '',
         v.tiktok_url ? `<a href="${escapeHtml(v.tiktok_url)}" target="_blank" rel="noopener" class="text-slate-800 hover:text-black"><i class="fa-brands fa-tiktok fa-lg"></i></a>` : ''
       ].join(' ');
+    }
+
+    function tagChips(v) {
+      if (!v.tags || !v.tags.length) return '';
+      return `<div class="flex flex-wrap gap-1.5 mt-1">${v.tags.map(t => `<span class="tag-chip">#${escapeHtml(t)}</span>`).join('')}</div>`;
+    }
+
+    function vendorRowHtml(v, idx) {
       return `
-        <article class="overflow-hidden rounded-3xl shadow-lg shadow-blue-500/10 ring-1 ring-white/60 bg-white/85">
-          <div class="relative h-44">
-            <img src="${escapeHtml(img)}" alt="${escapeHtml(v.name)}" class="h-full w-full object-cover" loading="lazy"/>
+        <div class="vendor-row flex items-center gap-3 rounded-2xl border border-transparent p-3" onclick="selectVendor(${idx})">
+          <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-14 w-14 rounded-xl object-cover flex-shrink-0 bg-white"/>
+          <div class="min-w-0 flex-1">
+            <p class="font-semibold text-slate-900 truncate">${escapeHtml(v.name)}</p>
+            ${v.opening_hours ? `<p class="text-xs text-slate-500">${escapeHtml(v.opening_hours)}</p>` : ''}
+            <p class="text-xs text-slate-500 truncate"><i class="fas fa-location-dot mr-1"></i>${escapeHtml(v.address)}</p>
+            ${tagChips(v)}
           </div>
-          <div class="px-5 py-4 space-y-2">
-            <h3 class="font-semibold text-slate-900">${escapeHtml(v.name)}</h3>
-            <p class="text-sm text-slate-600 line-clamp-3">${escapeHtml(v.description)}</p>
+          <i class="fas fa-chevron-right text-slate-300"></i>
+        </div>`;
+    }
+
+    function renderList(vendors) {
+      const list = document.getElementById('vendorList');
+      if (!vendors.length) {
+        list.innerHTML = '<p class="text-sm text-slate-500">Không tìm thấy gánh hàng nào phù hợp.</p>';
+        return;
+      }
+      list.innerHTML = vendors.map((v, i) => vendorRowHtml(v, allVendors.indexOf(v))).join('');
+    }
+
+    function mapEmbedSrc(v) {
+      if (!v) return 'https://www.google.com/maps?q=Vietnam&z=5&output=embed';
+      if (v.lat && v.lng) return `https://www.google.com/maps?q=${v.lat},${v.lng}&output=embed`;
+      return `https://www.google.com/maps?q=${encodeURIComponent(v.address || v.name)}&output=embed`;
+    }
+
+    function selectVendor(idx) {
+      const v = allVendors[idx];
+      if (!v) return;
+      selectedVendor = v;
+
+      document.getElementById('mapFrame').src = mapEmbedSrc(v);
+
+      const detail = document.getElementById('vendorDetail');
+      detail.classList.remove('hidden');
+      detail.innerHTML = `
+        <div class="flex items-start gap-4">
+          <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-20 w-20 rounded-2xl object-cover flex-shrink-0 bg-white"/>
+          <div class="min-w-0 flex-1 space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="font-semibold text-slate-900 text-lg">${escapeHtml(v.name)}</h3>
+              <button type="button" onclick="closeDetail()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-xmark"></i></button>
+            </div>
+            <p class="text-sm text-slate-600">${escapeHtml(v.description)}</p>
+            ${v.opening_hours ? `<p class="text-xs text-slate-500"><i class="fas fa-clock mr-1"></i>${escapeHtml(v.opening_hours)}</p>` : ''}
             <p class="text-xs text-slate-500"><i class="fas fa-location-dot mr-1"></i>${escapeHtml(v.address)}</p>
+            ${tagChips(v)}
             <div class="flex items-center justify-between pt-2">
-              <div class="flex gap-3">${socials}</div>
+              <div class="flex gap-3">${socialIcons(v)}</div>
               <a href="${escapeHtml(v.maps_url)}" target="_blank" rel="noopener" class="text-sm font-medium text-blue-600 hover:underline">
-                Xem bản đồ <i class="fas fa-up-right-from-square ml-1"></i>
+                Mở Google Maps <i class="fas fa-up-right-from-square ml-1"></i>
               </a>
             </div>
             <button type="button" onclick="contactVendor('${escapeHtml(v.contact_email)}','${escapeHtml(v.contact_phone)}')"
-              class="mt-2 w-full rounded-full border border-blue-200/60 px-3 py-2 text-xs text-blue-700 hover:bg-blue-50 transition">
+              class="mt-1 w-full rounded-full border border-blue-200/60 px-3 py-2 text-xs text-blue-700 hover:bg-blue-50 transition">
               <i class="fas fa-circle-info mr-1"></i> Liên hệ hỗ trợ
             </button>
           </div>
-        </article>`;
+        </div>`;
+    }
+
+    function closeDetail() {
+      selectedVendor = null;
+      document.getElementById('vendorDetail').classList.add('hidden');
+      document.getElementById('mapFrame').src = mapEmbedSrc(null);
     }
 
     function contactVendor(email, phone) {
       alert(`Liên hệ hỗ trợ:\nEmail: ${email}\nSĐT: ${phone}`);
     }
 
+    function handleSearch(query) {
+      const q = query.trim().toLowerCase();
+      if (!q) {
+        renderList(allVendors);
+        return;
+      }
+      const matches = allVendors.filter(v =>
+        (v.name || '').toLowerCase().includes(q) || (v.address || '').toLowerCase().includes(q)
+      );
+      renderList(matches);
+      // Khớp tìm kiếm -> tự hiện trên bản đồ + panel chi tiết bên trái.
+      if (matches.length) {
+        selectVendor(allVendors.indexOf(matches[0]));
+      }
+    }
+
     async function loadVendors() {
-      const grid = document.getElementById('vendorGrid');
-      grid.innerHTML = '<p class="text-sm text-slate-500">Đang tải danh sách...</p>';
+      const list = document.getElementById('vendorList');
+      list.innerHTML = '<p class="text-sm text-slate-500">Đang tải danh sách...</p>';
       try {
         // Đọc file tĩnh vendors.json (được scripts/sync_vendors.py tự sinh từ các gánh hàng
         // đã duyệt trong Neon). Không cần auth, không gọi DB trực tiếp từ trình duyệt.
         const res = await fetch(`vendors.json?t=${Date.now()}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const rows = await res.json();
-        if (!rows.length) {
-          grid.innerHTML = '<p class="text-sm text-slate-500">Chưa có gánh hàng nào được duyệt. Hãy là người đóng góp đầu tiên!</p>';
+        allVendors = await res.json();
+        if (!allVendors.length) {
+          list.innerHTML = '<p class="text-sm text-slate-500">Chưa có gánh hàng nào được duyệt. Hãy là người đóng góp đầu tiên!</p>';
           return;
         }
-        grid.innerHTML = rows.map(vendorCard).join('');
+        renderList(allVendors);
       } catch (err) {
         console.error(err);
-        grid.innerHTML = '<p class="text-sm text-red-500">Không tải được danh sách. Vui lòng thử lại sau.</p>';
+        list.innerHTML = '<p class="text-sm text-red-500">Không tải được danh sách. Vui lòng thử lại sau.</p>';
       }
     }
 
     // Không có backend nào nhận POST công khai (tránh phải lộ secret/API key).
     // Form ở đây chỉ thu thập + validate, sau đó chuyển người dùng sang GitHub Issue Form
     // (đã điền sẵn nội dung) để gửi - chỉ cần tài khoản GitHub miễn phí, không cần biết Git/code.
-    // scripts/sync_vendors.py sẽ tự động đọc issue mới và ghi vào Neon (status='pending').
+    // scripts/sync_vendors.py sẽ tự động đọc issue mới, map "Loại món" sang icon cố định
+    // trong ImageKit, và ghi vào Neon (status='pending').
     function submitVendor(ev) {
       ev.preventDefault();
       const msg = document.getElementById('vendorFormMsg');
@@ -269,7 +401,8 @@
         'vendor-description': document.getElementById('v_description').value.trim(),
         'vendor-address': document.getElementById('v_address').value.trim(),
         'vendor-maps': document.getElementById('v_maps').value.trim(),
-        'vendor-image': document.getElementById('v_image').value.trim(),
+        'vendor-category': document.getElementById('v_category').value.trim(),
+        'vendor-hours': document.getElementById('v_hours').value.trim(),
         'vendor-facebook': document.getElementById('v_facebook').value.trim(),
         'vendor-instagram': document.getElementById('v_instagram').value.trim(),
         'vendor-tiktok': document.getElementById('v_tiktok').value.trim(),

@@ -36,11 +36,33 @@ body:
       placeholder: "Mở Google Maps > Chia sẻ > Sao chép link"
     validations:
       required: true
-  - type: input
-    id: vendor-image
+  - type: dropdown
+    id: vendor-category
     attributes:
-      label: Link ảnh (tuỳ chọn)
-      placeholder: "Link ảnh public (từ FB/IG/Google Drive chia sẻ công khai...)"
+      label: Loại món (dùng để hiện icon trên bản đồ)
+      options:
+        - "Bánh mì"
+        - "Bắp luộc"
+        - "Cà phê"
+        - "Cà phê trứng"
+        - "Chè"
+        - "Đậu hũ / Tàu hũ"
+        - "Kem"
+        - "Nem chua / Cuốn"
+        - "Nước mía"
+        - "Nước sấu"
+        - "Phở / Bún"
+        - "Sinh tố"
+        - "Trà tắc"
+        - "Xôi"
+        - "Khác"
+    validations:
+      required: true
+  - type: input
+    id: vendor-hours
+    attributes:
+      label: Giờ mở bán (tuỳ chọn)
+      placeholder: "VD: 06:30 - 10:30"
   - type: input
     id: vendor-facebook
     attributes:

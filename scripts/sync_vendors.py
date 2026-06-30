@@ -23,13 +23,15 @@ REPO = "findatasolution/hopeseed"
 LABEL = "gop-y-gang-hang"
 SYNCED_LABEL = "synced"
 VENDORS_JSON_PATH = os.path.join(os.path.dirname(__file__), "..", "vendors.json")
+IMAGEKIT_ENDPOINT = "https://ik.imagekit.io/o2u9hny2s"
 
 FIELD_LABELS = [
     ("name", "Tên gánh hàng / người bán"),
     ("description", "Mô tả - bán gì"),
     ("address", "Địa chỉ mô tả"),
     ("maps_url", "Link Google Maps"),
-    ("image_url", "Link ảnh (tuỳ chọn)"),
+    ("category", "Loại món (dùng để hiện icon trên bản đồ)"),
+    ("opening_hours", "Giờ mở bán (tuỳ chọn)"),
     ("facebook_url", "Link Facebook (tuỳ chọn)"),
     ("instagram_url", "Link Instagram (tuỳ chọn)"),
     ("tiktok_url", "Link TikTok (tuỳ chọn)"),
@@ -37,6 +39,35 @@ FIELD_LABELS = [
     ("contact_phone", "Số điện thoại hỗ trợ"),
 ]
 REQUIRED_FIELDS = {"name", "description", "address", "maps_url", "contact_email", "contact_phone"}
+
+# Mỗi "Loại món" map sang 1 icon có thật trong ImageKit, thư mục /hopeseed/platform_assets
+# (xác nhận từ Media Library ngày 2026-06-30). "Khác"/giá trị không khớp sẽ dùng DEFAULT_ICON_SLUG.
+# Phải giữ đúng các nhãn (key) trùng với options trong .github/ISSUE_TEMPLATE/gop-y-gang-hang.yml
+# và trong <select id="v_category"> của index.html.
+CATEGORY_ICON_SLUGS = {
+    "Bánh mì": "banhmi",
+    "Bắp luộc": "bapluoc",
+    "Cà phê": "caphe",
+    "Cà phê trứng": "caphetrung",
+    "Chè": "che",
+    "Đậu hũ / Tàu hũ": "dauhu",
+    "Kem": "kem",
+    "Nem chua / Cuốn": "nemchua",
+    "Nước mía": "nuocmia",
+    "Nước sấu": "nuocsau",
+    "Phở / Bún": "pho",
+    "Sinh tố": "sinhto",
+    "Trà tắc": "tratac",
+    "Xôi": "xoi",
+}
+DEFAULT_ICON_URL = f"{IMAGEKIT_ENDPOINT}/hopeseed/LOGO8.png"
+
+
+def category_icon_url(category: str | None) -> str | None:
+    slug = CATEGORY_ICON_SLUGS.get(category or "")
+    if not slug:
+        return DEFAULT_ICON_URL
+    return f"{IMAGEKIT_ENDPOINT}/hopeseed/platform_assets/{slug}.png"
 
 
 def run_gh(args):
@@ -87,12 +118,15 @@ def insert_pending(cur, data: dict, issue_number: int) -> bool:
         run_gh(["issue", "close", str(issue_number)])
         return False
 
+    data["image_url"] = category_icon_url(data.get("category"))
+
     cur.execute(
         """
         INSERT INTO street_vendors
-            (name, description, address, maps_url, image_url,
+            (name, description, address, maps_url, image_url, category, opening_hours,
              facebook_url, instagram_url, tiktok_url, contact_email, contact_phone, status)
         VALUES (%(name)s, %(description)s, %(address)s, %(maps_url)s, %(image_url)s,
+                %(category)s, %(opening_hours)s,
                 %(facebook_url)s, %(instagram_url)s, %(tiktok_url)s, %(contact_email)s, %(contact_phone)s,
                 'pending')
         """,
@@ -123,8 +157,9 @@ def export_approved_to_json(conn):
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT name, description, address, maps_url, image_url,
-               facebook_url, instagram_url, tiktok_url, contact_email, contact_phone, created_at
+        SELECT name, description, address, maps_url, lat, lng, image_url,
+               facebook_url, instagram_url, tiktok_url, contact_email, contact_phone, created_at,
+               tags, opening_hours, category
         FROM street_vendors
         WHERE status = 'approved'
         ORDER BY created_at DESC
