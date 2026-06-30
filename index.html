@@ -403,6 +403,28 @@
       return `<div class="flex flex-wrap gap-1.5 mt-1">${v.tags.map(t => `<span class="tag-chip">#${escapeHtml(t)}</span>`).join('')}</div>`;
     }
 
+    // sun.png: sáng/rõ nét khi gánh đông khách hôm nay (>=100 tim), tối/xám khi ế (0 tim).
+    function sunFilter(hearts) {
+      const t = Math.min(hearts || 0, 100) / 100;
+      const brightness = (0.35 + t * 0.65).toFixed(2);
+      const grayscale = Math.round((1 - t) * 70);
+      return `filter: brightness(${brightness}) grayscale(${grayscale}%); transition: filter .3s ease;`;
+    }
+
+    function heartWidgetHtml(v) {
+      const hearts = v.hearts_today || 0;
+      return `
+        <div class="flex flex-col items-center gap-1 flex-shrink-0 w-14" onclick="event.stopPropagation()">
+          <span class="text-[11px] font-bold text-slate-600">${hearts} tim</span>
+          <img src="https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/sun.png" alt="Độ nhộn nhịp hôm nay"
+            class="w-7 h-7" style="${sunFilter(hearts)}"/>
+          <button type="button" onclick="giveHeart(${v.id}, this)" title="Thả tim nếu hôm nay bạn ghé thăm"
+            class="text-red-400 hover:text-red-600 hover:scale-110 transition text-lg leading-none">
+            <i class="fas fa-heart"></i>
+          </button>
+        </div>`;
+    }
+
     function vendorRowHtml(v, idx) {
       return `
         <div class="vendor-row flex items-center gap-3 rounded-2xl border border-transparent p-3" onclick="selectVendor(${idx})">
@@ -413,7 +435,7 @@
             <p class="text-xs text-slate-500 truncate"><i class="fas fa-location-dot mr-1"></i>${escapeHtml(v.address)}</p>
             ${tagChips(v)}
           </div>
-          <i class="fas fa-chevron-right text-slate-300"></i>
+          ${heartWidgetHtml(v)}
         </div>`;
     }
 
@@ -453,16 +475,9 @@
             ${v.opening_hours ? `<p class="text-xs text-slate-500"><i class="fas fa-clock mr-1"></i>${escapeHtml(v.opening_hours)}</p>` : ''}
             <p class="text-xs text-slate-500"><i class="fas fa-location-dot mr-1"></i>${escapeHtml(v.address)}</p>
             ${tagChips(v)}
-            <div class="flex items-center justify-between pt-2">
-              <div class="flex gap-3">${socialIcons(v)}</div>
-              <a href="${escapeHtml(v.maps_url)}" target="_blank" rel="noopener" class="text-sm font-medium text-blue-600 hover:underline">
-                Mở Google Maps <i class="fas fa-up-right-from-square ml-1"></i>
-              </a>
-            </div>
-            <button type="button" onclick="contactVendor('${escapeHtml(v.contact_email)}','${escapeHtml(v.contact_phone)}')"
-              class="mt-1 w-full rounded-full border border-blue-200/60 px-3 py-2 text-xs text-blue-700 hover:bg-blue-50 transition">
-              <i class="fas fa-circle-info mr-1"></i> Ghi chú mọi thứ về Gánh hàng rong này
-            </button>
+            <div class="flex items-center gap-3 pt-2">${socialIcons(v)}</div>
+            <input type="text" placeholder="Ghi chú mọi thứ về Gánh hàng rong này"
+              class="mt-1 w-full rounded-full border border-blue-200/60 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/>
           </div>
         </div>`;
     }
@@ -473,8 +488,45 @@
       document.getElementById('mapFrame').src = mapEmbedSrc(null);
     }
 
-    function contactVendor(email, phone) {
-      alert(`Liên hệ hỗ trợ:\nEmail: ${email}\nSĐT: ${phone}`);
+    // Thả tim ủng hộ - cần đăng nhập (dùng chung phiên với form đóng góp).
+    // Mỗi tài khoản chỉ thả được 1 tim/gánh/ngày (UNIQUE constraint trong DB).
+    async function giveHeart(vendorId, btnEl) {
+      const token = await getValidAccessToken();
+      if (!token) {
+        alert('Vui lòng đăng nhập (tab "Đóng góp thông tin") để thả tim ủng hộ gánh hàng này.');
+        switchTab('form');
+        return;
+      }
+      btnEl.disabled = true;
+      try {
+        const res = await fetch(`${NEON_DATA_API}/street_vendor_hearts`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({ vendor_id: vendorId })
+        });
+        if (res.ok) {
+          const vendor = allVendors.find(v => v.id === vendorId);
+          if (vendor) vendor.hearts_today = (vendor.hearts_today || 0) + 1;
+          if (selectedVendor && selectedVendor.id === vendorId) selectedVendor.hearts_today = vendor.hearts_today;
+          renderList(allVendors);
+        } else {
+          const body = await res.json().catch(() => ({}));
+          if (body.code === '23505') {
+            alert('Bạn đã thả tim cho gánh này hôm nay rồi. Hẹn mai ghé lại nhé!');
+          } else {
+            throw new Error(body.message || `HTTP ${res.status}`);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Thả tim thất bại: ' + err.message);
+      } finally {
+        btnEl.disabled = false;
+      }
     }
 
     function handleSearch(query) {
@@ -529,6 +581,10 @@
         return;
       }
 
+      // Gửi kèm contact_email lấy từ JWT đã giải mã phía client - chỉ làm giá trị dự phòng.
+      // Trigger phía DB (street_vendors_before_insert) vẫn ưu tiên ép lại theo auth.jwt() phía
+      // server khi đọc được, nên không thể mạo danh email người khác qua field này.
+      const tokenPayload = decodeJwt(token);
       const payload = {
         name: document.getElementById('v_name').value.trim(),
         category: document.getElementById('v_category').value.trim(),
@@ -538,6 +594,7 @@
         opening_hours: document.getElementById('v_hours').value.trim() || null,
         social_url: document.getElementById('v_social').value.trim() || null,
         contact_phone: document.getElementById('v_phone').value.trim() || null,
+        contact_email: (tokenPayload && tokenPayload.email) || null,
         status: 'pending'
       };
 
