@@ -88,6 +88,9 @@
         <button type="button" id="tabBtnForm" class="tab-btn" onclick="switchTab('form')">
           <i class="fas fa-pen mr-1"></i> Đóng góp thông tin
         </button>
+        <button type="button" id="tabBtnReview" class="tab-btn" onclick="switchTab('review')">
+          <i class="fas fa-check-double mr-1"></i> Xét duyệt thông tin
+        </button>
         <div class="toolbar-search">
           <i class="fas fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
           <input id="searchInput" type="text" placeholder="Tìm kiếm gánh hàng rong..." oninput="handleSearch(this.value)"/>
@@ -240,6 +243,23 @@
         </div>
       </div>
     </section>
+
+    <!-- TAB: REVIEW (Xét duyệt thông tin) -->
+    <section id="panelReview" class="tab-panel max-w-6xl mx-auto px-6 mt-6 mb-16">
+      <div class="glass-card rounded-3xl p-6 md:p-8 space-y-6">
+        <div>
+          <h2 class="text-xl font-semibold text-slate-900">Xét duyệt thông tin</h2>
+          <p class="text-sm text-slate-500 mt-1">
+            Các gánh hàng mới gửi đang chờ cộng đồng xác minh. Đủ <strong>3 lượt duyệt</strong> sẽ tự động hiển thị công khai.
+            <strong>Chỉ duyệt nếu bạn đã kiểm chứng thông tin này là đúng</strong> (vd: bạn từng ghé/biết rõ gánh hàng đó).
+            Cần đăng nhập để duyệt - mỗi tài khoản chỉ duyệt được 1 lần cho mỗi gánh.
+          </p>
+        </div>
+        <div id="reviewList" class="space-y-3">
+          <p class="text-sm text-slate-500">Đăng nhập ở tab "Đóng góp thông tin" để xem danh sách chờ duyệt.</p>
+        </div>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -261,9 +281,12 @@
     function switchTab(tab) {
       document.getElementById('panelMap').classList.toggle('active', tab === 'map');
       document.getElementById('panelForm').classList.toggle('active', tab === 'form');
+      document.getElementById('panelReview').classList.toggle('active', tab === 'review');
       document.getElementById('tabBtnMap').classList.toggle('active', tab === 'map');
       document.getElementById('tabBtnForm').classList.toggle('active', tab === 'form');
+      document.getElementById('tabBtnReview').classList.toggle('active', tab === 'review');
       if (tab === 'form') renderAuthState();
+      if (tab === 'review') loadPendingVendors();
     }
 
     // ===== Auth (Stack Auth - email/mật khẩu thật, publishable key an toàn để public) =====
@@ -419,9 +442,8 @@
           <img src="https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/sun.png" alt="Độ nhộn nhịp hôm nay"
             class="w-7 h-7" style="${sunFilter(hearts)}"/>
           <button type="button" onclick="giveHeart(${v.id}, this)" title="Thả tim nếu hôm nay bạn ghé thăm"
-            class="text-red-400 hover:text-red-600 hover:scale-110 transition text-lg leading-none">
-            <i class="fas fa-heart"></i>
-          </button>
+            class="flex items-center justify-center w-7 h-7 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 hover:scale-110 transition leading-none"
+            style="font-size:16px">♥</button>
         </div>`;
     }
 
@@ -562,6 +584,101 @@
       } catch (err) {
         console.error(err);
         list.innerHTML = '<p class="text-sm text-red-500">Không tải được danh sách. Vui lòng thử lại sau.</p>';
+      }
+    }
+
+    // ===== Xét duyệt thông tin (cộng đồng tự duyệt, 3 lượt = tự công khai) =====
+    // Đọc trực tiếp Neon Data API (cần đăng nhập), khác với tab Bản đồ (đọc vendors.json tĩnh),
+    // vì danh sách chờ duyệt cần thấy ngay khi có người vừa gửi, không chờ đồng bộ hàng giờ.
+    async function loadPendingVendors() {
+      const list = document.getElementById('reviewList');
+      const token = await getValidAccessToken();
+      if (!token) {
+        list.innerHTML = '<p class="text-sm text-slate-500">Đăng nhập ở tab "Đóng góp thông tin" để xem danh sách chờ duyệt.</p>';
+        return;
+      }
+      list.innerHTML = '<p class="text-sm text-slate-500">Đang tải danh sách chờ duyệt...</p>';
+      try {
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const [pendingRes, approvalsRes] = await Promise.all([
+          fetch(`${NEON_DATA_API}/street_vendors?status=eq.pending&order=created_at.desc`, { headers }),
+          fetch(`${NEON_DATA_API}/street_vendor_approvals`, { headers })
+        ]);
+        if (!pendingRes.ok) throw new Error(`HTTP ${pendingRes.status}`);
+        const pending = await pendingRes.json();
+        const approvals = approvalsRes.ok ? await approvalsRes.json() : [];
+
+        const myId = (decodeJwt(token) || {}).sub;
+        const countByVendor = {};
+        const myApprovals = new Set();
+        for (const a of approvals) {
+          countByVendor[a.vendor_id] = (countByVendor[a.vendor_id] || 0) + 1;
+          if (a.user_id === myId) myApprovals.add(a.vendor_id);
+        }
+
+        if (!pending.length) {
+          list.innerHTML = '<p class="text-sm text-slate-500">Không có gánh hàng nào đang chờ duyệt. 🎉</p>';
+          return;
+        }
+        list.innerHTML = pending.map(v => reviewRowHtml(v, countByVendor[v.id] || 0, myApprovals.has(v.id))).join('');
+      } catch (err) {
+        console.error(err);
+        list.innerHTML = '<p class="text-sm text-red-500">Không tải được danh sách chờ duyệt. Vui lòng thử lại sau.</p>';
+      }
+    }
+
+    function reviewRowHtml(v, count, approvedByMe) {
+      return `
+        <div class="rounded-2xl border border-blue-200/60 bg-white/90 p-4 flex items-start gap-4">
+          <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-16 w-16 object-contain flex-shrink-0"/>
+          <div class="min-w-0 flex-1 space-y-1">
+            <p class="font-semibold text-slate-900">${escapeHtml(v.name)}</p>
+            <p class="text-sm text-slate-600">${escapeHtml(v.description || '')}</p>
+            <p class="text-xs text-slate-500"><i class="fas fa-location-dot mr-1"></i>${escapeHtml(v.address)}</p>
+            <a href="${escapeHtml(v.maps_url)}" target="_blank" rel="noopener" class="text-xs text-blue-600 hover:underline">
+              Xem địa điểm trên Google Maps <i class="fas fa-up-right-from-square ml-1"></i>
+            </a>
+          </div>
+          <div class="flex flex-col items-center gap-2 flex-shrink-0 w-24">
+            <span class="text-xs font-bold text-slate-600">${count}/3 duyệt</span>
+            <button type="button" ${approvedByMe ? 'disabled' : ''} onclick="approveVendor(${v.id}, this)"
+              class="w-full rounded-full px-3 py-2 text-xs font-medium transition ${approvedByMe
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                : 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200'}">
+              <i class="fas fa-check mr-1"></i> ${approvedByMe ? 'Đã duyệt' : 'Duyệt'}
+            </button>
+          </div>
+        </div>`;
+    }
+
+    async function approveVendor(vendorId, btnEl) {
+      const token = await getValidAccessToken();
+      if (!token) { switchTab('form'); return; }
+      btnEl.disabled = true;
+      try {
+        const res = await fetch(`${NEON_DATA_API}/street_vendor_approvals`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify({ vendor_id: vendorId })
+        });
+        if (res.ok) {
+          await loadPendingVendors();
+        } else {
+          const body = await res.json().catch(() => ({}));
+          if (body.code === '23505') {
+            alert('Bạn đã duyệt gánh hàng này rồi.');
+          } else {
+            throw new Error(body.message || `HTTP ${res.status}`);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Duyệt thất bại: ' + err.message);
+        btnEl.disabled = false;
       }
     }
 
