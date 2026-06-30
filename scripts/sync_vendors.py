@@ -60,7 +60,7 @@ CATEGORY_ICON_SLUGS = {
     "Trà tắc": "tratac",
     "Xôi": "xoi",
 }
-DEFAULT_ICON_URL = f"{IMAGEKIT_ENDPOINT}/hopeseed/LOGO8.png"
+DEFAULT_ICON_URL = f"{IMAGEKIT_ENDPOINT}/hopeseed/platform_assets/maincharactor.png"
 
 
 def category_icon_url(category: str | None) -> str | None:
