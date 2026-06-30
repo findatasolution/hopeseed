@@ -1,13 +1,17 @@
 Hạ tầng quản lý:
 
-Hạ tầng quản lý (cập nhật):
-- GitHub: lưu trữ mã nguồn (frontend & backend)
-- Netlify: triển khai frontend, proxy `/api/*` sang backend
-- Render: chạy FastAPI backend
-- Console Neon: Postgres (managed), dùng `DATABASE_URL` (sslmode=require)
-- ImageKit: lưu trữ ảnh/tài liệu; upload an toàn nên thực hiện qua backend (ký/signed) hoặc dùng public key khi demo
+Hạ tầng quản lý (cập nhật - không dùng Netlify/Render, chỉ dùng dịch vụ free):
+- GitHub Pages: lưu trữ mã nguồn + host toàn bộ frontend tĩnh (Settings -> Pages -> branch `main` / root)
+- Console Neon: Postgres (managed). Dùng **Neon Data API** (PostgREST) để frontend gọi thẳng REST API vào DB, không cần backend riêng
+- ImageKit: dùng làm CDN tối ưu ảnh qua URL proxy (`tr:w-...`), không upload trực tiếp từ trình duyệt (tránh phải lộ private key)
 
-Frontend nên gọi API qua `"/api"` (được Netlify proxy sang Render) hoặc cấu hình `window.HOPESEED_API_BASE` nếu muốn chỉ định rõ backend.
+Trang "Gánh hàng rong" (`ganghangrong.html`):
+1. Chạy `street_vendors_schema.sql` trong Neon Console -> SQL Editor để tạo bảng + Row Level Security.
+2. Bật Data API trong Neon Console -> Settings -> Data API, lấy endpoint + anon key.
+3. Điền endpoint/anon key/ImageKit ID thật vào `vendor-config.js`.
+4. Bật GitHub Pages cho repo, trang sẽ chạy tại `https://<user>.github.io/<repo>/ganghangrong.html`.
+
+Service cũ (auth.py, main.py, database.py, models.py, schema.sql) cần backend Python (FastAPI) — chỉ chạy được nếu sau này có nơi host miễn phí khác; hiện tại không nằm trong scope free-only.
 
 Bảng mã màu
 1. headline, slogan, subtext #120747
