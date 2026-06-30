@@ -3,7 +3,7 @@
     "id": 3,
     "name": "[DEMO] Bánh mì cô Tư",
     "description": "Bánh mì thịt nướng, pate nhà làm",
-    "address": "Vỉa hè 12 Lê Lợi, Q.1, TP.HCM",
+    "address": "Q.1, TP.HCM",
     "maps_url": "https://maps.app.goo.gl/demo1",
     "lat": 10.7769,
     "lng": 106.7009,
@@ -24,7 +24,7 @@
     "id": 4,
     "name": "[DEMO] Xe nước mía chú Tư",
     "description": "Nước mía tắc, nước mía sầu riêng",
-    "address": "45 Nguyễn Trãi, Q.5, TP.HCM",
+    "address": "Q5, TP.HCM",
     "maps_url": "https://maps.app.goo.gl/demo2",
     "lat": 10.7556,
     "lng": 106.6733,
@@ -39,6 +39,6 @@
     ],
     "opening_hours": "14:00 - 18:00",
     "category": "Nước mía",
-    "hearts_today": 0
+    "hearts_today": 1
   }
 ]
