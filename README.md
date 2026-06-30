@@ -8,19 +8,24 @@ Hạ tầng quản lý (cập nhật - không dùng Netlify/Render, chỉ dùng 
 - ImageKit: dùng làm CDN tối ưu ảnh qua URL proxy (`tr:w-...`), không upload trực tiếp từ trình duyệt (tránh phải lộ private key).
 - GitHub Issues + `gh` CLI: kênh ghi dữ liệu công khai, không cần secret/JWT nào lộ ra frontend.
 
-Trang "Gánh hàng rong" (`ganghangrong.html`) — kiến trúc:
+Trang web hiện chỉ còn **1 trang duy nhất**: `index.html` — "Gánh hàng rong", có 2 tab (Bản đồ / Đóng góp thông tin) trên cùng 1 trang. Kiến trúc:
 1. `street_vendors_schema.sql` đã chạy trên Neon (bảng `street_vendors` + RLS, role `anonymous`/`authenticated`).
-2. Người dùng điền form trên `ganghangrong.html` → bấm "Gửi qua GitHub" → được chuyển sang GitHub Issue Form
+2. Người dùng điền form ở tab "Đóng góp thông tin" → bấm "Gửi qua GitHub" → được chuyển sang GitHub Issue Form
    (`.github/ISSUE_TEMPLATE/gop-y-gang-hang.yml`) đã điền sẵn nội dung, chỉ cần tài khoản GitHub miễn phí để xác nhận gửi.
 3. `scripts/sync_vendors.py` (chạy bằng `DATABASE_URL=<connection string> python3 scripts/sync_vendors.py`):
    - đọc các issue có label `gop-y-gang-hang` chưa `synced` → insert vào Neon với `status='pending'` → comment cảm ơn + đóng issue.
    - đọc toàn bộ `street_vendors` có `status='approved'` → ghi ra `vendors.json` ở gốc repo → commit + push.
-4. `ganghangrong.html` chỉ fetch tĩnh `vendors.json` để hiển thị danh sách — không gọi Neon/JWT từ trình duyệt.
+   - tự chạy mỗi giờ qua 1 trigger lịch (không cần GitHub Actions secret).
+4. Tab "Bản đồ" chỉ fetch tĩnh `vendors.json` để hiển thị danh sách — không gọi Neon/JWT từ trình duyệt.
 5. **Duyệt bài**: vào Neon Console -> Table Editor -> bảng `street_vendors` -> đổi `status` thành `approved`.
-   Lần chạy `sync_vendors.py` tiếp theo sẽ tự cập nhật `vendors.json`.
+   Lần chạy `sync_vendors.py` tiếp theo (tối đa 1 tiếng) sẽ tự cập nhật `vendors.json`.
 6. `vendor-config.js` chỉ còn cấu hình ImageKit endpoint (public, an toàn).
 
-Service cũ (auth.py, main.py, database.py, models.py, schema.sql) cần backend Python (FastAPI) — chỉ chạy được nếu sau này có nơi host miễn phí khác; hiện tại không nằm trong scope free-only.
+Service quyên góp bệnh viện cũ (auth.py, main.py, database.py, models.py, schema.sql, requirements.txt + các trang trong
+`archive/`: index.html, hopestories.html, campaigns.html, monitor.html) **không còn nằm trên site công khai** —
+đã chuyển vào `archive/` để giữ lại code, không xoá, vì cần backend Python (FastAPI) chạy ở đâu đó (không còn dùng Render)
+mới hoạt động lại được. Các bảng DB liên quan (campaign_owners, hospitals, media, patient_bills, patients, raise_tickets,
+regions, ticket_updates, users) vẫn còn trên Neon, đang rỗng/không dùng, giữ nguyên phòng khi cần dùng lại.
 
 Bảng mã màu
 1. headline, slogan, subtext #120747
