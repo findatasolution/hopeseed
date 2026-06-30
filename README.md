@@ -2,25 +2,43 @@ Hạ tầng quản lý:
 
 Hạ tầng quản lý (cập nhật - không dùng Netlify/Render, chỉ dùng dịch vụ free):
 - GitHub Pages: lưu trữ mã nguồn + host toàn bộ frontend tĩnh (Settings -> Pages -> branch `main` / root) — đã bật.
-- Console Neon: Postgres (managed), nguồn dữ liệu duy nhất. Neon Data API (PostgREST) của project này **bắt buộc JWT**
-  qua Neon Auth/Stack Auth cho mọi request kể cả role `anonymous` — chưa cấu hình publishable key nên trang KHÔNG
-  gọi thẳng Neon từ trình duyệt. Thay vào đó dùng GitHub Issues làm kênh ghi (xem bên dưới).
-- ImageKit: dùng làm CDN tối ưu ảnh qua URL proxy (`tr:w-...`), không upload trực tiếp từ trình duyệt (tránh phải lộ private key).
-- GitHub Issues + `gh` CLI: kênh ghi dữ liệu công khai, không cần secret/JWT nào lộ ra frontend.
+- Console Neon: Postgres (managed), nguồn dữ liệu duy nhất.
+- **Neon Auth (Stack Auth)**: đăng nhập thật bằng email/mật khẩu, miễn phí, không cần backend riêng. Bật ở
+  Neon Console -> Auth. Frontend chỉ dùng `Stack Auth Project ID` + `Publishable Client Key` (an toàn để public,
+  gọi thẳng REST API `https://api.stack-auth.com/api/v1/...`). **Không bao giờ** đưa `Secret Server Key` vào code.
+- **Neon Data API** (PostgREST): sau khi đăng nhập, form "Đóng góp thông tin" và nút "thả tim" gọi POST thẳng vào
+  Data API bằng JWT của phiên đăng nhập (role Postgres `authenticated`). Mọi request đều cần JWT hợp lệ — role
+  `anonymous` không tự có JWT trừ khi tự dựng thêm cơ chế ẩn danh (chưa làm, xem mục "Giới hạn" bên dưới).
+- ImageKit: CDN ảnh tĩnh sẵn có trong `/hopeseed/platform_assets` (icon món ăn, mascot, icon mặt trời) - không upload
+  từ trình duyệt, không cần private key.
+- GitHub Issues + `gh` CLI: kênh ghi dữ liệu *cũ*, vẫn giữ `scripts/sync_vendors.py` chạy nền để xuất `vendors.json`
+  tĩnh cho tab "Bản đồ" đọc (xem bên dưới) - không còn dùng để nhận submission mới từ form.
 
 Trang web hiện chỉ còn **1 trang duy nhất**: `index.html` — "Gánh hàng rong", có 2 tab (Bản đồ / Đóng góp thông tin) trên cùng 1 trang. Kiến trúc:
-1. `street_vendors_schema.sql` đã chạy trên Neon (bảng `street_vendors` + RLS, role `anonymous`/`authenticated`).
-2. Người dùng điền form ở tab "Đóng góp thông tin" → bấm "Gửi qua GitHub" → được chuyển sang GitHub Issue Form
-   (`.github/ISSUE_TEMPLATE/gop-y-gang-hang.yml`) đã điền sẵn nội dung, chỉ cần tài khoản GitHub miễn phí để xác nhận gửi.
-3. `scripts/sync_vendors.py` (chạy bằng `DATABASE_URL=<connection string> python3 scripts/sync_vendors.py`):
-   - đọc các issue có label `gop-y-gang-hang` chưa `synced` → insert vào Neon với `status='pending'` → comment cảm ơn + đóng issue.
-   - đọc toàn bộ `street_vendors` có `status='approved'` → ghi ra `vendors.json` ở gốc repo → commit + push.
+
+1. `street_vendors_schema.sql` đã chạy trên Neon: bảng `street_vendors` (RLS, role `authenticated`/`anonymous`),
+   bảng `street_vendor_hearts` (thả tim, 1 lượt/tài khoản/gánh/ngày), 2 trigger ép dữ liệu nhạy cảm theo JWT
+   đăng nhập thay vì tin client (`contact_email`, `user_id` của lượt thả tim) - chống mạo danh.
+2. **Đóng góp thông tin**: người dùng đăng ký/đăng nhập email+mật khẩu thật ngay trên trang (Stack Auth REST API)
+   → điền form → bấm Gửi → JS POST thẳng vào Neon Data API (`status='pending'`). Không qua GitHub nữa.
+3. **Thả tim**: mỗi dòng gánh hàng có số tim hôm nay + icon mặt trời (sáng rõ khi ≥100 tim, tối/xám khi 0 tim) +
+   nút tim — bấm thì POST thẳng vào `street_vendor_hearts`, cũng cần đăng nhập (dùng chung phiên).
+4. `scripts/sync_vendors.py` (chạy bằng `DATABASE_URL=<connection string> python3 scripts/sync_vendors.py`):
+   - đọc các GitHub issue cũ (nếu còn) có label `gop-y-gang-hang` chưa `synced` → insert Neon `status='pending'`.
+   - đọc `street_vendors` có `status='approved'` (kèm số tim hôm nay từ `street_vendor_hearts`) → ghi `vendors.json`.
    - tự chạy mỗi giờ qua 1 trigger lịch (không cần GitHub Actions secret).
-4. Tab "Bản đồ" chỉ fetch tĩnh `vendors.json` để hiển thị danh sách — không gọi Neon/JWT từ trình duyệt.
-5. **Duyệt bài**: vào Neon Console -> Table Editor -> bảng `street_vendors` -> đổi `status` thành `approved`.
+5. Tab "Bản đồ" fetch tĩnh `vendors.json` để hiển thị danh sách (đọc không cần đăng nhập) — chỉ phần ghi (đóng góp,
+   thả tim) mới gọi Data API trực tiếp.
+6. **Duyệt bài**: vào Neon Console -> Table Editor -> bảng `street_vendors` -> đổi `status` thành `approved`.
    Lần chạy `sync_vendors.py` tiếp theo (tối đa 1 tiếng) sẽ tự cập nhật `vendors.json`.
-6. Icon hiển thị trên thẻ/chi tiết gánh hàng lấy trực tiếp từ `image_url` (URL ImageKit có sẵn do
-   `sync_vendors.py` map từ "Loại món" - xem `CATEGORY_ICON_SLUGS`), không qua proxy/transform nào.
+7. Icon "Loại món" + ảnh mặc định/mascot lấy trực tiếp từ `image_url` (DB tự gán qua trigger, xem
+   `CATEGORY_ICON_SLUGS`-tương-đương trong SQL), không qua proxy/transform nào.
+
+**Giới hạn đã biết**: token ẩn danh của Stack Auth (`/auth/anonymous/sign-up`) bị Neon Data API từ chối với lỗi
+"jwk not found" — chưa rõ nguyên nhân (có thể do JWKS cache chưa hỗ trợ audience `:anon`). Vì vậy phần đọc dữ liệu
+công khai (tab Bản đồ) vẫn dùng `vendors.json` tĩnh thay vì gọi Data API trực tiếp như phần ghi.
+Ngoài ra: bảng mới tạo trên Data API cần ~30-60s để được nhận diện (schema cache) - có thể ép sớm hơn bằng
+`NOTIFY pgrst, 'reload schema';` trong Neon SQL Editor.
 
 Service quyên góp bệnh viện cũ (auth.py, main.py, database.py, models.py, schema.sql, requirements.txt + các trang trong
 `archive/`: index.html, hopestories.html, campaigns.html, monitor.html) **không còn nằm trên site công khai** —

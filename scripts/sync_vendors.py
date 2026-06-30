@@ -155,12 +155,19 @@ def export_approved_to_json(conn):
     cur = conn.cursor()
     cur.execute(
         """
-        SELECT name, description, address, maps_url, lat, lng, image_url,
-               social_url, contact_email, contact_phone, created_at,
-               tags, opening_hours, category
-        FROM street_vendors
-        WHERE status = 'approved'
-        ORDER BY created_at DESC
+        SELECT sv.id, sv.name, sv.description, sv.address, sv.maps_url, sv.lat, sv.lng, sv.image_url,
+               sv.social_url, sv.contact_email, sv.contact_phone, sv.created_at,
+               sv.tags, sv.opening_hours, sv.category,
+               COALESCE(h.heart_count, 0) AS hearts_today
+        FROM street_vendors sv
+        LEFT JOIN (
+            SELECT vendor_id, COUNT(*) AS heart_count
+            FROM street_vendor_hearts
+            WHERE hearted_on = CURRENT_DATE
+            GROUP BY vendor_id
+        ) h ON h.vendor_id = sv.id
+        WHERE sv.status = 'approved'
+        ORDER BY sv.created_at DESC
         """
     )
     cols = [d.name for d in cur.description]
