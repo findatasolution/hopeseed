@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "name": "Bánh mì cô Tư (TEST)",
+    "description": "Bánh mì thịt nướng, bán từ 6h-10h sáng",
+    "address": "Vỉa hè trước số 12 Lê Lợi, Q.1",
+    "maps_url": "https://maps.app.goo.gl/test123",
+    "image_url": null,
+    "facebook_url": "https://facebook.com/banhmicotutest",
+    "instagram_url": null,
+    "tiktok_url": null,
+    "contact_email": "test@example.com",
+    "contact_phone": "0900000000",
+    "created_at": "2026-06-30T11:17:18.778618+00:00"
+  }
+]
