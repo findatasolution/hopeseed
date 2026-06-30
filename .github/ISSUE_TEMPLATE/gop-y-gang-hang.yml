@@ -54,7 +54,10 @@ body:
     id: vendor-maps
     attributes:
       label: Link Google Maps
-      placeholder: "Mở Google Maps > Chia sẻ > Sao chép link"
+      description: >-
+        Để định vị chính xác: trên Google Maps, ghim đúng điểm bán → Chia sẻ → chọn tab
+        "Nhúng bản đồ" (Embed a map), không chọn "Gửi liên kết trong tin nhắn" → sao chép HTML và dán vào đây.
+      placeholder: "Dán mã nhúng bản đồ hoặc link Google Maps"
     validations:
       required: true
   - type: input

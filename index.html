@@ -84,26 +84,59 @@
       body.app-mode #mapFrame { height: 100% !important; }
     }
 
-    /* ===== Mobile/Tablet (< 1024px): pill bar trở thành bottom bar cố định, tab chỉ hiện
-       icon, mọi nội dung căn giữa 2 lề. App-mode (desktop) không bao giờ kích hoạt ở đây. */
-    @media (max-width: 1023px) {
-      body { padding-bottom: 78px; } /* chừa chỗ cho bottom bar cố định */
-      #toolbarSection {
-        position: fixed; top: auto; bottom: 0; left: 0; right: 0; margin: 0 !important;
-        padding: 10px 12px; max-width: 100%; z-index: 50;
-        background: linear-gradient(0deg, #ffffff 0%, rgba(255,255,255,.95) 70%, rgba(255,255,255,.85) 100%);
-        box-shadow: 0 -8px 24px rgba(2,132,199,.18);
-      }
-      .toolbar { max-width: none; justify-content: center; }
-      .tab-label { display: none; }
-      .tab-btn { flex: 0 0 auto; padding: 12px 14px; font-size: 16px; }
-      .toolbar-search { max-width: 9rem; }
+    /* ===== Mobile bottom nav (mockup): Danh sách / Bản đồ / + Đóng góp / Xét duyệt ===== */
+    #mobileBottomBar { display: none; }
+    .mobile-bar {
+      display: flex; align-items: center; justify-content: space-around;
+      background: #fff; border-radius: 28px; padding: 10px 14px;
+      box-shadow: 0 16px 40px -12px rgba(2,132,199,.35);
+    }
+    .mobile-nav-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 6px 10px; border-radius: 14px; color: #64748b; font-size: 11px; font-weight: 700;
+      flex: 1 1 0; min-width: 0;
+    }
+    .mobile-nav-btn i { font-size: 18px; }
+    .mobile-nav-btn.active { color: var(--accent-strong); }
+    .mobile-nav-fab {
+      display: flex; align-items: center; justify-content: center;
+      width: 52px; height: 52px; border-radius: 9999px; flex-shrink: 0;
+      background: var(--accent); color: #fff; font-size: 18px;
+      box-shadow: 0 12px 26px rgba(2,132,199,.4);
+      margin: -26px 6px 0;
+    }
 
-      /* Căn giữa toàn bộ nội dung chính */
-      #heroSection, #panelMap, #panelForm, #panelReview { text-align: center; }
+    /* ===== Mobile/Tablet (< 1024px): toolbar trên cùng chỉ còn ô tìm kiếm, điều hướng
+       chuyển xuống bottom nav, panel Bản đồ tách 2 chế độ Danh sách/Bản đồ riêng,
+       nội dung chính căn giữa 2 lề. App-mode (desktop) không bao giờ kích hoạt ở đây. */
+    @media (max-width: 1023px) {
+      body { padding-bottom: 96px; } /* chừa chỗ cho bottom nav cố định */
+      #mobileBottomBar {
+        display: block; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+        padding: 0 16px 16px;
+      }
+      #toolbarSection { margin-top: 16px !important; padding-left: 24px; padding-right: 24px; }
+      #toolbarSection .toolbar {
+        background: transparent; box-shadow: none; backdrop-filter: none; padding: 0;
+      }
+      #toolbarSection .tab-btn { display: none; }
+      #toolbarSection .toolbar-search { max-width: none; margin-left: 0; }
+      #toolbarSection .toolbar-search input {
+        background: #fff; box-shadow: 0 14px 34px -14px rgba(2,132,199,.35); padding: 14px 14px 14px 38px;
+      }
+
+      /* Tab Bản đồ: trên mobile chỉ hiện 1 trong 2 cột tuỳ chế độ Danh sách/Bản đồ */
+      #panelMap .grid { display: block; }
+      #panelMap:not(.mobile-show-map) #mapColumn { display: none; }
+      #panelMap:not(.mobile-show-list) #listColumn { display: none; }
+      #mapColumn .glass-card { height: 60vh; }
+      #mapColumn #mapFrame { height: 100% !important; }
+
+      /* Căn giữa nội dung chính (tiêu đề, mô tả...), giữ căn trái cho nội dung đọc/gõ */
+      #heroSection, #panelMap > h2, #panelForm h2, #panelForm p, #panelReview h2, #panelReview p { text-align: center; }
       #heroSection .grid { justify-items: center; }
       #heroSection p.max-w-xl { margin-left: auto; margin-right: auto; }
-      #panelMap .grid { justify-items: center; }
+      #listColumn > .flex.items-center.justify-between { justify-content: center; flex-direction: column; gap: 6px; }
       .vendor-row, .rounded-2xl.border.border-blue-200\/60 { text-align: left; } /* nội dung từng dòng/card vẫn đọc tự nhiên */
       #vendorForm, #authForm { margin-left: auto; margin-right: auto; }
       .field { text-align: left; } /* label/input bên trong field giữ căn trái cho dễ đọc/gõ */
@@ -127,16 +160,16 @@
       </div>
     </header>
 
-    <!-- TABS + SEARCH (1 pill bar, đè lên ảnh hero) -->
+    <!-- TABS + SEARCH (desktop: 1 pill bar đè lên ảnh hero) -->
     <section id="toolbarSection" class="max-w-6xl mx-auto px-6 -mt-10 relative z-10">
       <div class="toolbar">
-        <button type="button" id="tabBtnMap" class="tab-btn active" onclick="switchTab('map')" title="Bản đồ">
+        <button type="button" class="tab-btn active" data-tab="map" onclick="switchTab('map')" title="Bản đồ">
           <i class="fas fa-map-location-dot"></i><span class="tab-label ml-1">Bản đồ</span>
         </button>
-        <button type="button" id="tabBtnForm" class="tab-btn" onclick="switchTab('form')" title="Đóng góp thông tin">
+        <button type="button" class="tab-btn" data-tab="form" onclick="switchTab('form')" title="Đóng góp thông tin">
           <i class="fas fa-pen"></i><span class="tab-label ml-1">Đóng góp thông tin</span>
         </button>
-        <button type="button" id="tabBtnReview" class="tab-btn" onclick="switchTab('review')" title="Xét duyệt thông tin">
+        <button type="button" class="tab-btn" data-tab="review" onclick="switchTab('review')" title="Xét duyệt thông tin">
           <i class="fas fa-check-double"></i><span class="tab-label ml-1">Xét duyệt thông tin</span>
         </button>
         <div class="toolbar-search">
@@ -146,11 +179,29 @@
       </div>
     </section>
 
+    <!-- BOTTOM NAV (mobile/tablet only): Danh sách / Bản đồ / + Đóng góp / Xét duyệt -->
+    <nav id="mobileBottomBar">
+      <div class="mobile-bar">
+        <button type="button" class="mobile-nav-btn active" data-tab="map" data-subview="list" onclick="switchTab('map','list')">
+          <i class="fas fa-list"></i><span>Danh sách</span>
+        </button>
+        <button type="button" class="mobile-nav-btn" data-tab="map" data-subview="map" onclick="switchTab('map','map')">
+          <i class="fas fa-map-location-dot"></i><span>Bản đồ</span>
+        </button>
+        <button type="button" class="mobile-nav-fab" data-tab="form" onclick="switchTab('form')" title="Đóng góp thông tin">
+          <i class="fas fa-plus"></i>
+        </button>
+        <button type="button" class="mobile-nav-btn" data-tab="review" onclick="switchTab('review')">
+          <i class="fas fa-check-double"></i><span>Xét duyệt</span>
+        </button>
+      </div>
+    </nav>
+
     <!-- TAB: MAP / LIST -->
-    <section id="panelMap" class="tab-panel active max-w-6xl mx-auto px-6 mt-6 mb-16">
+    <section id="panelMap" class="tab-panel active mobile-show-list max-w-6xl mx-auto px-6 mt-6 mb-16">
       <div class="grid gap-6 lg:grid-cols-[1fr,1.5fr] items-start">
         <!-- LEFT: detail + list -->
-        <div class="app-col glass-card rounded-3xl p-6 md:p-8">
+        <div id="listColumn" class="app-col glass-card rounded-3xl p-6 md:p-8">
           <div class="flex items-center justify-between flex-shrink-0 pb-4">
             <h2 class="text-xl font-semibold text-slate-900">Danh sách gánh hàng đã duyệt</h2>
             <button onclick="loadVendors()" class="text-sm text-blue-600 hover:underline"><i class="fas fa-rotate-right mr-1"></i>Tải lại</button>
@@ -161,10 +212,7 @@
         </div>
 
         <!-- RIGHT: map -->
-        <div class="app-col space-y-6">
-          <a id="mapOpenLink" href="#" target="_blank" rel="noopener" class="hidden flex-shrink-0 text-sm font-medium text-blue-600 hover:underline px-1">
-            <i class="fas fa-up-right-from-square mr-1"></i>Mở vị trí chính xác trên Google Maps
-          </a>
+        <div id="mapColumn" class="app-col space-y-6">
           <div class="app-flex1 glass-card rounded-3xl p-2 overflow-hidden">
             <iframe id="mapFrame" class="w-full h-[280px] rounded-2xl" style="border:0"
               loading="lazy" referrerpolicy="no-referrer-when-downgrade"
@@ -264,7 +312,16 @@
 
             <div class="field sm:col-span-2">
               <label for="v_maps">Link Google Maps *</label>
-              <input id="v_maps" type="url" required placeholder="Mở Google Maps > Chia sẻ > Sao chép link, dán vào đây">
+              <textarea id="v_maps" rows="2" required
+                placeholder="Dán đoạn mã nhúng bản đồ hoặc link Google Maps vào đây"></textarea>
+              <p class="text-xs text-slate-500 mt-1.5 leading-5">
+                <strong>Để định vị chính xác nhất:</strong> trên Google Maps, bấm giữ đúng điểm bán hàng để ghim,
+                bấm "Chia sẻ" (Share) → chọn tab <strong>"Nhúng bản đồ" (Embed a map)</strong>, bấm "SAO CHÉP HTML"
+                rồi dán nguyên đoạn đó vào đây.<br/>
+                <strong class="text-amber-600">Lưu ý:</strong> đừng nhầm sang tab "Gửi liên kết trong tin nhắn" (Send a link)
+                — link đó (dạng <code>maps.app.goo.gl/...</code>) sẽ khiến vị trí hiển thị trên trang không chính xác.
+                Nếu không tìm thấy mục Nhúng, dán link chia sẻ thường vẫn được nhưng có thể bị lệch vị trí.
+              </p>
             </div>
 
             <div class="field">
@@ -329,13 +386,25 @@
     let expandedVendorId = null;
     let currentListVendors = [];
 
-    function switchTab(tab) {
-      document.getElementById('panelMap').classList.toggle('active', tab === 'map');
+    // mobileMapView chỉ có ý nghĩa trên mobile/tablet (<1024px): tab "Bản đồ" tách thành
+    // 2 chế độ riêng (Danh sách / Bản đồ) qua bottom nav. Desktop luôn hiện cả 2 cột.
+    let mobileMapView = 'list';
+
+    function switchTab(tab, subview) {
+      if (tab === 'map' && subview) mobileMapView = subview;
+
+      const panelMap = document.getElementById('panelMap');
+      panelMap.classList.toggle('active', tab === 'map');
       document.getElementById('panelForm').classList.toggle('active', tab === 'form');
       document.getElementById('panelReview').classList.toggle('active', tab === 'review');
-      document.getElementById('tabBtnMap').classList.toggle('active', tab === 'map');
-      document.getElementById('tabBtnForm').classList.toggle('active', tab === 'form');
-      document.getElementById('tabBtnReview').classList.toggle('active', tab === 'review');
+      panelMap.classList.toggle('mobile-show-list', mobileMapView === 'list');
+      panelMap.classList.toggle('mobile-show-map', mobileMapView === 'map');
+
+      document.querySelectorAll('[data-tab]').forEach(btn => {
+        const isActive = btn.dataset.tab === tab && (!btn.dataset.subview || btn.dataset.subview === mobileMapView);
+        btn.classList.toggle('active', isActive);
+      });
+
       if (tab === 'form') renderAuthState();
       if (tab === 'review') loadPendingVendors();
       if (tab !== 'map') exitAppMode();
@@ -557,18 +626,39 @@
     // có toạ độ ngay trong URL, vd .../@10.77,106.70,17z hoặc ?q=10.77,106.70). Link rút gọn
     // dạng maps.app.goo.gl thì không parse được (không lộ toạ độ ra ngoài), khi đó mới fallback
     // đoán theo địa chỉ text - kém chính xác hơn link thật nên luôn kèm nút "Mở vị trí chính xác".
+    // Google Maps "Chia sẻ > Nhúng bản đồ (Embed a map)" cho ra 1 đoạn <iframe src="https://www.google.com/maps/embed?pb=...">
+    // - đây là cách CHÍNH XÁC NHẤT (không cần đoán toạ độ). Cho phép người dùng dán cả đoạn iframe
+    // hoặc chỉ riêng URL src đó vào ô "Link Google Maps", ta lấy ra dùng thẳng làm src cho khung xem.
+    function extractEmbedIframeSrc(input) {
+      if (!input) return null;
+      const iframeMatch = input.match(/<iframe[^>]+src=["']([^"']+)["']/i);
+      if (iframeMatch) return iframeMatch[1];
+      if (/^https:\/\/www\.google\.com\/maps\/embed/i.test(input.trim())) return input.trim();
+      return null;
+    }
+
+    // Một số link Google Maps dài (không phải link rút gọn maps.app.goo.gl) có lộ toạ độ ngay
+    // trong URL - cờ "order" đánh dấu vì có chỗ là lat,lng, có chỗ (link nhúng cũ kiểu pb=) lại
+    // là lng,lat (!2d=kinh độ, !3d=vĩ độ).
     function extractLatLngFromMapsUrl(url) {
       if (!url) return null;
-      const patterns = [/@(-?\d+\.\d+),(-?\d+\.\d+)/, /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/];
-      for (const re of patterns) {
-        const m = url.match(re);
-        if (m) return { lat: m[1], lng: m[2] };
+      const patterns = [
+        { re: /@(-?\d+\.\d+),(-?\d+\.\d+)/, order: 'latlng' },
+        { re: /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, order: 'latlng' },
+        { re: /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/, order: 'latlng' },
+        { re: /!2d(-?\d+\.\d+)!3d(-?\d+\.\d+)/, order: 'lnglat' },
+      ];
+      for (const p of patterns) {
+        const m = url.match(p.re);
+        if (m) return p.order === 'lnglat' ? { lat: m[2], lng: m[1] } : { lat: m[1], lng: m[2] };
       }
       return null;
     }
 
     function mapEmbedSrc(v) {
       if (!v) return 'https://www.google.com/maps?q=Th%C3%A0nh+ph%E1%BB%91+H%E1%BB%93+Ch%C3%AD+Minh&z=11&output=embed';
+      const embedSrc = extractEmbedIframeSrc(v.maps_url);
+      if (embedSrc) return embedSrc;
       if (v.lat && v.lng) return `https://www.google.com/maps?q=${v.lat},${v.lng}&output=embed`;
       const fromUrl = extractLatLngFromMapsUrl(v.maps_url);
       if (fromUrl) return `https://www.google.com/maps?q=${fromUrl.lat},${fromUrl.lng}&output=embed`;
@@ -583,9 +673,6 @@
       selectedVendor = v;
       expandedVendorId = v.id;
       document.getElementById('mapFrame').src = mapEmbedSrc(v);
-      const openLink = document.getElementById('mapOpenLink');
-      openLink.href = v.maps_url;
-      openLink.classList.remove('hidden');
       renderList(currentListVendors);
     }
 
@@ -594,7 +681,6 @@
       selectedVendor = null;
       expandedVendorId = null;
       document.getElementById('mapFrame').src = mapEmbedSrc(null);
-      document.getElementById('mapOpenLink').classList.add('hidden');
       renderList(currentListVendors);
     }
 
