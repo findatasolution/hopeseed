@@ -8,7 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxuvwv/b4jzlGC62Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="icon" href="https://ik.imagekit.io/o2u9hny2s/hopeseed/LOGO8.png" type="image/png">
-  <script src="vendor-config.js"></script>
 
   <style>
     :root {
@@ -103,7 +102,7 @@
           <i class="fas fa-map-location-dot mr-1"></i> Bản đồ
         </button>
         <button type="button" id="tabBtnForm" class="tab-btn" onclick="switchTab('form')">
-          <i class="fa-brands fa-github mr-1"></i> Đóng góp thông tin
+          <i class="fas fa-pen mr-1"></i> Đóng góp thông tin
         </button>
       </div>
     </section>
@@ -262,7 +261,9 @@
     }
 
     function vendorIcon(v) {
-      return v.image_url ? window.hopeseedImageProxy(v.image_url, 120) : 'https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/maincharactor.png';
+      // image_url đã là URL ImageKit đầy đủ (map sẵn từ "Loại món" trong sync_vendors.py),
+      // không cần qua hopeseedImageProxy nữa (proxy đó chỉ dùng cho URL ảnh ngoài, không áp dụng ở đây).
+      return v.image_url || 'https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/maincharactor.png';
     }
 
     function socialIcons(v) {

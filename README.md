@@ -19,7 +19,8 @@ Trang web hiện chỉ còn **1 trang duy nhất**: `index.html` — "Gánh hàn
 4. Tab "Bản đồ" chỉ fetch tĩnh `vendors.json` để hiển thị danh sách — không gọi Neon/JWT từ trình duyệt.
 5. **Duyệt bài**: vào Neon Console -> Table Editor -> bảng `street_vendors` -> đổi `status` thành `approved`.
    Lần chạy `sync_vendors.py` tiếp theo (tối đa 1 tiếng) sẽ tự cập nhật `vendors.json`.
-6. `vendor-config.js` chỉ còn cấu hình ImageKit endpoint (public, an toàn).
+6. Icon hiển thị trên thẻ/chi tiết gánh hàng lấy trực tiếp từ `image_url` (URL ImageKit có sẵn do
+   `sync_vendors.py` map từ "Loại món" - xem `CATEGORY_ICON_SLUGS`), không qua proxy/transform nào.
 
 Service quyên góp bệnh viện cũ (auth.py, main.py, database.py, models.py, schema.sql, requirements.txt + các trang trong
 `archive/`: index.html, hopestories.html, campaigns.html, monitor.html) **không còn nằm trên site công khai** —
