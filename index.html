@@ -60,12 +60,35 @@
     .vendor-row{ cursor:pointer; transition: background .15s ease, border-color .15s ease; }
     .vendor-row:hover, .vendor-row.selected{ background:rgba(2,132,199,.06); border-color: rgba(2,132,199,.35); }
     .tag-chip{ font-size: 11px; padding: 2px 10px; border-radius:9999px; background:#eff6ff; color:#1d4ed8; }
+
+    /* ===== App-mode: chỉ desktop. Sau khi cuộn quá nửa HERO, hero biến mất, toolbar
+       ghim lên top, panel Bản đồ chiếm hết chiều cao còn lại, chỉ cột danh sách cuộn được. */
+    body.app-mode #heroSection { display: none; }
+    body.app-mode #toolbarSection {
+      position: fixed; top: 0; left: 0; right: 0; margin-top: 0 !important;
+      padding-top: 14px; padding-bottom: 14px;
+      background: linear-gradient(125deg, #e0f2fe 0%, #bae6fd 45%, #ffffff 100%);
+      z-index: 50; box-shadow: 0 6px 24px rgba(2,132,199,.18);
+    }
+    @media (min-width: 1024px) {
+      body.app-mode #panelMap.active {
+        position: fixed; top: var(--toolbar-h, 84px); left: 0; right: 0; bottom: 0;
+        margin: 0 !important; padding-top: 16px; padding-bottom: 16px; overflow: hidden;
+      }
+      body.app-mode #panelMap.active > .grid {
+        height: 100%; align-items: stretch !important; grid-template-rows: minmax(0, 1fr);
+      }
+      body.app-mode .app-col { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+      body.app-mode .app-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+      body.app-mode .app-flex1 { flex: 1 1 auto; min-height: 0; }
+      body.app-mode #mapFrame { height: 100% !important; }
+    }
   </style>
 </head>
 <body class="relative text-slate-700">
   <div class="relative z-10">
     <!-- HERO -->
-    <header class="max-w-6xl mx-auto px-6 pt-8">
+    <header id="heroSection" class="max-w-6xl mx-auto px-6 pt-8">
       <div class="grid gap-6 md:grid-cols-[1.2fr,0.8fr] items-center">
         <div class="space-y-4">
           <h1 class="text-3xl sm:text-4xl font-semibold text-slate-900">Bản đồ hương vị yêu thương</h1>
@@ -80,7 +103,7 @@
     </header>
 
     <!-- TABS + SEARCH (1 pill bar, đè lên ảnh hero) -->
-    <section class="max-w-6xl mx-auto px-6 -mt-10 relative z-10">
+    <section id="toolbarSection" class="max-w-6xl mx-auto px-6 -mt-10 relative z-10">
       <div class="toolbar">
         <button type="button" id="tabBtnMap" class="tab-btn active" onclick="switchTab('map')">
           <i class="fas fa-map-location-dot mr-1"></i> Bản đồ
@@ -102,20 +125,20 @@
     <section id="panelMap" class="tab-panel active max-w-6xl mx-auto px-6 mt-6 mb-16">
       <div class="grid gap-6 lg:grid-cols-[1fr,1.5fr] items-start">
         <!-- LEFT: detail + list -->
-        <div class="glass-card rounded-3xl p-6 md:p-8 space-y-6">
-          <div class="flex items-center justify-between">
+        <div class="app-col glass-card rounded-3xl p-6 md:p-8">
+          <div class="flex items-center justify-between flex-shrink-0 pb-4">
             <h2 class="text-xl font-semibold text-slate-900">Danh sách gánh hàng đã duyệt</h2>
             <button onclick="loadVendors()" class="text-sm text-blue-600 hover:underline"><i class="fas fa-rotate-right mr-1"></i>Tải lại</button>
           </div>
-          <div id="vendorList" class="space-y-3">
+          <div id="vendorList" class="app-scroll space-y-3">
             <p class="text-sm text-slate-500">Đang tải danh sách...</p>
           </div>
         </div>
 
         <!-- RIGHT: map -->
-        <div class="space-y-6">
-          <div class="glass-card rounded-3xl p-2 overflow-hidden">
-            <iframe id="mapFrame" class="w-full rounded-2xl" height="280" style="border:0"
+        <div class="app-col space-y-6">
+          <div class="app-flex1 glass-card rounded-3xl p-2 overflow-hidden">
+            <iframe id="mapFrame" class="w-full h-[280px] rounded-2xl" style="border:0"
               loading="lazy" referrerpolicy="no-referrer-when-downgrade"
               src="https://www.google.com/maps?q=Th%C3%A0nh+ph%E1%BB%91+H%E1%BB%93+Ch%C3%AD+Minh&z=11&output=embed"></iframe>
           </div>
@@ -287,6 +310,7 @@
       document.getElementById('tabBtnReview').classList.toggle('active', tab === 'review');
       if (tab === 'form') renderAuthState();
       if (tab === 'review') loadPendingVendors();
+      if (tab !== 'map') exitAppMode();
     }
 
     // ===== Auth (Stack Auth - email/mật khẩu thật, publishable key an toàn để public) =====
@@ -764,6 +788,57 @@
       }
     }
 
+    // ===== App-mode (chỉ desktop): cuộn quá nửa HERO -> hero biến mất, toolbar ghim top,
+    // panel Bản đồ chiếm hết chiều cao còn lại, chỉ cột danh sách cuộn được, map đứng yên.
+    const desktopMQ = window.matchMedia('(min-width: 1024px)');
+    let appModeActive = false;
+
+    function setToolbarHeightVar() {
+      const tb = document.getElementById('toolbarSection');
+      if (tb) document.documentElement.style.setProperty('--toolbar-h', tb.offsetHeight + 'px');
+    }
+
+    function enterAppMode() {
+      if (appModeActive || !desktopMQ.matches) return;
+      appModeActive = true;
+      setToolbarHeightVar();
+      document.body.classList.add('app-mode');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function exitAppMode() {
+      if (!appModeActive) return;
+      appModeActive = false;
+      document.body.classList.remove('app-mode');
+      document.body.style.overflow = '';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setupHeroObserver() {
+      const hero = document.getElementById('heroSection');
+      if (!hero) return;
+      new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (!appModeActive && desktopMQ.matches && entry.intersectionRatio <= 0.5 && entry.boundingClientRect.top < 0) {
+            enterAppMode();
+          }
+        });
+      }, { threshold: [0, 0.25, 0.5, 0.75, 1] }).observe(hero);
+    }
+
+    // Cuộn lên trong khi danh sách đã ở đầu -> thoát app-mode, hero quay lại.
+    document.addEventListener('wheel', (e) => {
+      if (!appModeActive) return;
+      const scrollEl = document.querySelector('#panelMap.active .app-scroll');
+      if (scrollEl && e.deltaY < 0 && scrollEl.scrollTop <= 0) {
+        exitAppMode();
+      }
+    }, { passive: true });
+
+    desktopMQ.addEventListener('change', () => { if (!desktopMQ.matches) exitAppMode(); });
+    window.addEventListener('resize', () => { if (appModeActive) setToolbarHeightVar(); });
+
+    setupHeroObserver();
     loadVendors();
     renderAuthState();
   </script>
