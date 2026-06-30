@@ -263,6 +263,128 @@
       document.getElementById('panelForm').classList.toggle('active', tab === 'form');
       document.getElementById('tabBtnMap').classList.toggle('active', tab === 'map');
       document.getElementById('tabBtnForm').classList.toggle('active', tab === 'form');
+      if (tab === 'form') renderAuthState();
+    }
+
+    // ===== Auth (Stack Auth - email/mật khẩu thật, publishable key an toàn để public) =====
+    function stackHeaders(extra) {
+      return Object.assign({
+        'x-stack-access-type': 'client',
+        'x-stack-project-id': STACK_PROJECT_ID,
+        'x-stack-publishable-client-key': STACK_PUBLISHABLE_CLIENT_KEY,
+        'Content-Type': 'application/json'
+      }, extra || {});
+    }
+
+    function saveSession(data) {
+      localStorage.setItem('hopeseed_access_token', data.access_token);
+      localStorage.setItem('hopeseed_refresh_token', data.refresh_token);
+    }
+    function clearSession() {
+      localStorage.removeItem('hopeseed_access_token');
+      localStorage.removeItem('hopeseed_refresh_token');
+    }
+    function decodeJwt(token) {
+      try {
+        let payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (payload.length % 4) payload += '=';
+        return JSON.parse(atob(payload));
+      } catch {
+        return null;
+      }
+    }
+
+    async function authSignUp(email, password) {
+      const res = await fetch(`${STACK_API_BASE}/auth/password/sign-up`, {
+        method: 'POST', headers: stackHeaders(), body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Đăng ký thất bại');
+      saveSession(data);
+      return data;
+    }
+
+    async function authSignIn(email, password) {
+      const res = await fetch(`${STACK_API_BASE}/auth/password/sign-in`, {
+        method: 'POST', headers: stackHeaders(), body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Email hoặc mật khẩu không đúng');
+      saveSession(data);
+      return data;
+    }
+
+    async function authRefresh() {
+      const refreshToken = localStorage.getItem('hopeseed_refresh_token');
+      if (!refreshToken) return null;
+      const res = await fetch(`${STACK_API_BASE}/auth/sessions/current/refresh`, {
+        method: 'POST', headers: stackHeaders({ 'x-stack-refresh-token': refreshToken }), body: JSON.stringify({})
+      });
+      if (!res.ok) { clearSession(); return null; }
+      const data = await res.json();
+      localStorage.setItem('hopeseed_access_token', data.access_token);
+      return data.access_token;
+    }
+
+    async function getValidAccessToken() {
+      const token = localStorage.getItem('hopeseed_access_token');
+      if (!token) return null;
+      const payload = decodeJwt(token);
+      const now = Math.floor(Date.now() / 1000);
+      if (payload && payload.exp && payload.exp - now > 60) return token;
+      return await authRefresh();
+    }
+
+    function authSignOut() {
+      clearSession();
+      renderAuthState();
+    }
+
+    async function renderAuthState() {
+      const token = await getValidAccessToken();
+      const authBar = document.getElementById('authBar');
+      const authGate = document.getElementById('authGate');
+      const formWrap = document.getElementById('vendorFormWrap');
+      if (token) {
+        const payload = decodeJwt(token);
+        document.getElementById('authEmail').textContent = (payload && payload.email) || '';
+        authBar.classList.remove('hidden');
+        authGate.classList.add('hidden');
+        formWrap.classList.remove('hidden');
+      } else {
+        authBar.classList.add('hidden');
+        authGate.classList.remove('hidden');
+        formWrap.classList.add('hidden');
+      }
+    }
+
+    let authMode = 'signin';
+    function switchAuthTab(mode) {
+      authMode = mode;
+      document.getElementById('authTabSignin').classList.toggle('active', mode === 'signin');
+      document.getElementById('authTabSignup').classList.toggle('active', mode === 'signup');
+      document.getElementById('authSubmitBtn').textContent = mode === 'signin' ? 'Đăng nhập' : 'Đăng ký';
+    }
+
+    async function submitAuth(ev) {
+      ev.preventDefault();
+      const email = document.getElementById('auth_email').value.trim();
+      const password = document.getElementById('auth_password').value;
+      const msg = document.getElementById('authMsg');
+      const btn = document.getElementById('authSubmitBtn');
+      btn.disabled = true;
+      msg.textContent = '';
+      try {
+        if (authMode === 'signup') await authSignUp(email, password);
+        else await authSignIn(email, password);
+        document.getElementById('authForm').reset();
+        await renderAuthState();
+      } catch (err) {
+        msg.textContent = err.message;
+        msg.className = 'text-sm text-red-500';
+      } finally {
+        btn.disabled = false;
+      }
     }
 
     function vendorIcon(v) {
@@ -391,46 +513,67 @@
       }
     }
 
-    // Không có backend nào nhận POST công khai (tránh phải lộ secret/API key).
-    // Form ở đây chỉ thu thập + validate, sau đó chuyển người dùng sang GitHub Issue Form
-    // (đã điền sẵn nội dung) để gửi - chỉ cần tài khoản GitHub miễn phí, không cần biết Git/code.
-    // scripts/sync_vendors.py sẽ tự động đọc issue mới, map "Loại món" sang icon cố định
-    // trong ImageKit, và ghi vào Neon (status='pending').
-    function submitVendor(ev) {
+    // Gửi thẳng vào Neon Data API bằng JWT của phiên đăng nhập (không qua GitHub nữa).
+    // contact_email không gửi từ client - DB tự ép theo email tài khoản đăng nhập
+    // (trigger street_vendors_before_insert), tránh mạo danh email người khác.
+    async function submitVendor(ev) {
       ev.preventDefault();
       const msg = document.getElementById('vendorFormMsg');
+      const btn = document.getElementById('vendorSubmitBtn');
 
-      // honeypot: nếu bot điền vào field ẩn -> âm thầm bỏ qua, không redirect
-      if (document.getElementById('hp_website').value.trim() !== '') {
-        msg.textContent = 'Đã gửi. Cảm ơn bạn!';
-        msg.className = 'text-sm text-green-600';
-        document.getElementById('vendorForm').reset();
+      const token = await getValidAccessToken();
+      if (!token) {
+        msg.textContent = 'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.';
+        msg.className = 'text-sm text-red-500';
+        await renderAuthState();
         return;
       }
 
-      const fields = {
-        'vendor-name': document.getElementById('v_name').value.trim(),
-        'vendor-description': document.getElementById('v_description').value.trim(),
-        'vendor-address': document.getElementById('v_address').value.trim(),
-        'vendor-maps': document.getElementById('v_maps').value.trim(),
-        'vendor-category': document.getElementById('v_category').value.trim(),
-        'vendor-hours': document.getElementById('v_hours').value.trim(),
-        'vendor-social': document.getElementById('v_social').value.trim(),
-        'vendor-email': document.getElementById('v_email').value.trim(),
-        'vendor-phone': document.getElementById('v_phone').value.trim()
+      const payload = {
+        name: document.getElementById('v_name').value.trim(),
+        category: document.getElementById('v_category').value.trim(),
+        description: document.getElementById('v_description').value.trim() || null,
+        address: document.getElementById('v_address').value.trim(),
+        maps_url: document.getElementById('v_maps').value.trim(),
+        opening_hours: document.getElementById('v_hours').value.trim() || null,
+        social_url: document.getElementById('v_social').value.trim() || null,
+        contact_phone: document.getElementById('v_phone').value.trim() || null,
+        status: 'pending'
       };
 
-      const params = new URLSearchParams({ template: GITHUB_ISSUE_TEMPLATE });
-      for (const [key, value] of Object.entries(fields)) {
-        if (value) params.set(key, value);
-      }
+      btn.disabled = true;
+      btn.classList.add('opacity-60');
+      msg.textContent = '';
 
-      msg.textContent = 'Đang chuyển sang GitHub để bạn xác nhận gửi...';
-      msg.className = 'text-sm text-blue-600';
-      window.open(`https://github.com/${GITHUB_REPO}/issues/new?${params.toString()}`, '_blank', 'noopener');
+      try {
+        const res = await fetch(`${NEON_DATA_API}/street_vendors`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal'
+          },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          throw new Error(errBody.message || `HTTP ${res.status}`);
+        }
+        msg.textContent = 'Cảm ơn! Thông tin đã được ghi nhận và đang chờ duyệt.';
+        msg.className = 'text-sm text-green-600';
+        document.getElementById('vendorForm').reset();
+      } catch (err) {
+        console.error(err);
+        msg.textContent = 'Gửi thất bại: ' + err.message;
+        msg.className = 'text-sm text-red-500';
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-60');
+      }
     }
 
     loadVendors();
+    renderAuthState();
   </script>
 </body>
 </html>
