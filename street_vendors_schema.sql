@@ -134,5 +134,71 @@ CREATE TRIGGER trg_hearts_force_user
 BEFORE INSERT ON street_vendor_hearts
 FOR EACH ROW EXECUTE FUNCTION street_vendor_hearts_force_user();
 
--- Sau khi tạo bảng mới, Neon Data API có thể mất 30-60s để nhận diện (schema cache).
--- Có thể ép reload sớm hơn bằng: NOTIFY pgrst, 'reload schema';
+
+-- ===== Xét duyệt thông tin (cộng đồng tự duyệt - đủ 3 lượt thì tự công khai) =====
+CREATE TABLE IF NOT EXISTS street_vendor_approvals (
+  id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  vendor_id   BIGINT NOT NULL REFERENCES street_vendors(id) ON DELETE CASCADE,
+  user_id     TEXT NOT NULL,              -- Stack Auth user id, DB tự gán
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (vendor_id, user_id)             -- 1 tài khoản chỉ duyệt 1 lần / gánh (không theo ngày)
+);
+ALTER TABLE street_vendor_approvals ENABLE ROW LEVEL SECURITY;
+
+GRANT SELECT, INSERT ON street_vendor_approvals TO authenticated;
+GRANT USAGE, SELECT ON SEQUENCE street_vendor_approvals_id_seq TO authenticated;
+
+CREATE POLICY authenticated_insert_approval ON street_vendor_approvals
+  FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY authenticated_select_approvals ON street_vendor_approvals
+  FOR SELECT TO authenticated USING (true);
+
+-- Cho phép tài khoản đã đăng nhập xem cả các gánh đang "pending" (để xét duyệt),
+-- không chỉ "approved" như policy authenticated_select_approved ở trên.
+CREATE POLICY authenticated_select_pending ON street_vendors
+  FOR SELECT TO authenticated USING (status = 'pending');
+
+CREATE OR REPLACE FUNCTION street_vendor_approvals_before_insert()
+RETURNS trigger AS $$
+DECLARE
+  jwt_sub text;
+BEGIN
+  BEGIN
+    jwt_sub := auth.jwt() ->> 'sub';
+  EXCEPTION WHEN OTHERS THEN
+    jwt_sub := NULL;
+  END;
+  IF jwt_sub IS NOT NULL THEN
+    NEW.user_id := jwt_sub;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER trg_approvals_before_insert
+BEFORE INSERT ON street_vendor_approvals
+FOR EACH ROW EXECUTE FUNCTION street_vendor_approvals_before_insert();
+
+-- Đủ 3 lượt duyệt -> tự chuyển status sang 'approved' (chạy với quyền owner qua
+-- SECURITY DEFINER nên không cần cấp UPDATE trên street_vendors cho role authenticated).
+CREATE OR REPLACE FUNCTION street_vendor_approvals_after_insert()
+RETURNS trigger AS $$
+DECLARE
+  cnt int;
+BEGIN
+  SELECT count(*) INTO cnt FROM street_vendor_approvals WHERE vendor_id = NEW.vendor_id;
+  IF cnt >= 3 THEN
+    UPDATE street_vendors SET status = 'approved' WHERE id = NEW.vendor_id AND status = 'pending';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER trg_approvals_after_insert
+AFTER INSERT ON street_vendor_approvals
+FOR EACH ROW EXECUTE FUNCTION street_vendor_approvals_after_insert();
+
+-- Sau khi tạo bảng mới, Neon Data API có thể mất 30-60s (đôi khi lâu hơn, nhiều node cache
+-- độc lập) để nhận diện (schema cache). Có thể ép reload sớm hơn bằng:
+--   NOTIFY pgrst, 'reload schema';
+-- nhưng vẫn nên thử lại vài lần nếu gặp lỗi "Could not find the table ... in the schema cache".
