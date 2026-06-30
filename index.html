@@ -83,6 +83,31 @@
       body.app-mode .app-flex1 { flex: 1 1 auto; min-height: 0; }
       body.app-mode #mapFrame { height: 100% !important; }
     }
+
+    /* ===== Mobile/Tablet (< 1024px): pill bar trở thành bottom bar cố định, tab chỉ hiện
+       icon, mọi nội dung căn giữa 2 lề. App-mode (desktop) không bao giờ kích hoạt ở đây. */
+    @media (max-width: 1023px) {
+      body { padding-bottom: 78px; } /* chừa chỗ cho bottom bar cố định */
+      #toolbarSection {
+        position: fixed; top: auto; bottom: 0; left: 0; right: 0; margin: 0 !important;
+        padding: 10px 12px; max-width: 100%; z-index: 50;
+        background: linear-gradient(0deg, #ffffff 0%, rgba(255,255,255,.95) 70%, rgba(255,255,255,.85) 100%);
+        box-shadow: 0 -8px 24px rgba(2,132,199,.18);
+      }
+      .toolbar { max-width: none; justify-content: center; }
+      .tab-label { display: none; }
+      .tab-btn { flex: 0 0 auto; padding: 12px 14px; font-size: 16px; }
+      .toolbar-search { max-width: 9rem; }
+
+      /* Căn giữa toàn bộ nội dung chính */
+      #heroSection, #panelMap, #panelForm, #panelReview { text-align: center; }
+      #heroSection .grid { justify-items: center; }
+      #heroSection p.max-w-xl { margin-left: auto; margin-right: auto; }
+      #panelMap .grid { justify-items: center; }
+      .vendor-row, .rounded-2xl.border.border-blue-200\/60 { text-align: left; } /* nội dung từng dòng/card vẫn đọc tự nhiên */
+      #vendorForm, #authForm { margin-left: auto; margin-right: auto; }
+      .field { text-align: left; } /* label/input bên trong field giữ căn trái cho dễ đọc/gõ */
+    }
   </style>
 </head>
 <body class="relative text-slate-700">
@@ -105,14 +130,14 @@
     <!-- TABS + SEARCH (1 pill bar, đè lên ảnh hero) -->
     <section id="toolbarSection" class="max-w-6xl mx-auto px-6 -mt-10 relative z-10">
       <div class="toolbar">
-        <button type="button" id="tabBtnMap" class="tab-btn active" onclick="switchTab('map')">
-          <i class="fas fa-map-location-dot mr-1"></i> Bản đồ
+        <button type="button" id="tabBtnMap" class="tab-btn active" onclick="switchTab('map')" title="Bản đồ">
+          <i class="fas fa-map-location-dot"></i><span class="tab-label ml-1">Bản đồ</span>
         </button>
-        <button type="button" id="tabBtnForm" class="tab-btn" onclick="switchTab('form')">
-          <i class="fas fa-pen mr-1"></i> Đóng góp thông tin
+        <button type="button" id="tabBtnForm" class="tab-btn" onclick="switchTab('form')" title="Đóng góp thông tin">
+          <i class="fas fa-pen"></i><span class="tab-label ml-1">Đóng góp thông tin</span>
         </button>
-        <button type="button" id="tabBtnReview" class="tab-btn" onclick="switchTab('review')">
-          <i class="fas fa-check-double mr-1"></i> Xét duyệt thông tin
+        <button type="button" id="tabBtnReview" class="tab-btn" onclick="switchTab('review')" title="Xét duyệt thông tin">
+          <i class="fas fa-check-double"></i><span class="tab-label ml-1">Xét duyệt thông tin</span>
         </button>
         <div class="toolbar-search">
           <i class="fas fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
@@ -137,6 +162,9 @@
 
         <!-- RIGHT: map -->
         <div class="app-col space-y-6">
+          <a id="mapOpenLink" href="#" target="_blank" rel="noopener" class="hidden flex-shrink-0 text-sm font-medium text-blue-600 hover:underline px-1">
+            <i class="fas fa-up-right-from-square mr-1"></i>Mở vị trí chính xác trên Google Maps
+          </a>
           <div class="app-flex1 glass-card rounded-3xl p-2 overflow-hidden">
             <iframe id="mapFrame" class="w-full h-[280px] rounded-2xl" style="border:0"
               loading="lazy" referrerpolicy="no-referrer-when-downgrade"
@@ -525,9 +553,25 @@
       list.innerHTML = vendors.map((v, i) => vendorRowHtml(v, allVendors.indexOf(v))).join('');
     }
 
+    // Cố gắng lấy toạ độ thật từ chính link Google Maps người dùng dán vào (nhiều link dài
+    // có toạ độ ngay trong URL, vd .../@10.77,106.70,17z hoặc ?q=10.77,106.70). Link rút gọn
+    // dạng maps.app.goo.gl thì không parse được (không lộ toạ độ ra ngoài), khi đó mới fallback
+    // đoán theo địa chỉ text - kém chính xác hơn link thật nên luôn kèm nút "Mở vị trí chính xác".
+    function extractLatLngFromMapsUrl(url) {
+      if (!url) return null;
+      const patterns = [/@(-?\d+\.\d+),(-?\d+\.\d+)/, /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/, /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/];
+      for (const re of patterns) {
+        const m = url.match(re);
+        if (m) return { lat: m[1], lng: m[2] };
+      }
+      return null;
+    }
+
     function mapEmbedSrc(v) {
       if (!v) return 'https://www.google.com/maps?q=Th%C3%A0nh+ph%E1%BB%91+H%E1%BB%93+Ch%C3%AD+Minh&z=11&output=embed';
       if (v.lat && v.lng) return `https://www.google.com/maps?q=${v.lat},${v.lng}&output=embed`;
+      const fromUrl = extractLatLngFromMapsUrl(v.maps_url);
+      if (fromUrl) return `https://www.google.com/maps?q=${fromUrl.lat},${fromUrl.lng}&output=embed`;
       return `https://www.google.com/maps?q=${encodeURIComponent(v.address || v.name)}&output=embed`;
     }
 
@@ -539,6 +583,9 @@
       selectedVendor = v;
       expandedVendorId = v.id;
       document.getElementById('mapFrame').src = mapEmbedSrc(v);
+      const openLink = document.getElementById('mapOpenLink');
+      openLink.href = v.maps_url;
+      openLink.classList.remove('hidden');
       renderList(currentListVendors);
     }
 
@@ -547,6 +594,7 @@
       selectedVendor = null;
       expandedVendorId = null;
       document.getElementById('mapFrame').src = mapEmbedSrc(null);
+      document.getElementById('mapOpenLink').classList.add('hidden');
       renderList(currentListVendors);
     }
 
