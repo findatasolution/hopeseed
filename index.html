@@ -654,12 +654,27 @@
         </div>`;
     }
 
+    function googleMapsUrl(v) {
+      let lat = parseFloat(v.lat), lng = parseFloat(v.lng);
+      if (!lat || !lng) {
+        const c = extractLatLngFromMapsUrl(v.maps_url);
+        if (c) { lat = parseFloat(c.lat); lng = parseFloat(c.lng); }
+      }
+      return lat && lng
+        ? `https://www.google.com/maps?q=${lat},${lng}`
+        : `https://www.google.com/maps/search/${encodeURIComponent(v.address || v.name)}`;
+    }
+
     function vendorDetailCardHtml(v) {
       return `
         <div class="rounded-2xl border border-blue-200/60 bg-white/90 p-3">
           <div class="flex items-center gap-3 pb-3 border-b border-blue-100">
             <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-14 w-14 object-contain flex-shrink-0"/>
             <h3 class="font-semibold text-slate-900 text-base flex-1 leading-snug">${escapeHtml(v.name)}</h3>
+            <a href="${googleMapsUrl(v)}" target="_blank" rel="noopener" title="Mở trong Google Maps"
+              class="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-blue-200 bg-white hover:bg-blue-50 text-slate-500 hover:text-blue-600">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            </a>
             <button type="button" onclick="collapseVendor(event)" class="flex-shrink-0 text-slate-400 hover:text-slate-600 p-1"><i class="fas fa-xmark"></i></button>
           </div>
           <div class="pt-3 space-y-1.5">
@@ -686,11 +701,19 @@
 
     // ===== Leaflet map =====
     let leafletMap = null;
-    let vendorMarkers = []; // [{vendorId, marker, lat, lng}]
+    let vendorMarkers = []; // [{vendorId, vendor, marker, lat, lng}]
     let userLocMarker = null;
 
-    const MARKER_DEFAULT  = { radius: 8,  fillColor: '#0284c7', color: '#fff', weight: 2.5, fillOpacity: 0.92 };
-    const MARKER_SELECTED = { radius: 11, fillColor: '#ef4444', color: '#fff', weight: 2.5, fillOpacity: 0.95 };
+    function createVendorIcon(v, selected) {
+      const s = selected ? 38 : 30;
+      const border = selected ? '#ef4444' : '#0284c7';
+      const shadow = selected ? '0 3px 12px rgba(239,68,68,.45)' : '0 2px 8px rgba(2,132,199,.3)';
+      return L.divIcon({
+        className: '',
+        iconSize: [s, s], iconAnchor: [s/2, s/2], tooltipAnchor: [0, -s/2],
+        html: `<div style="width:${s}px;height:${s}px;border-radius:50%;background:#fff;border:2.5px solid ${border};box-shadow:${shadow};overflow:hidden;display:flex;align-items:center;justify-content:center"><img src="${vendorIcon(v)}" style="width:${s-8}px;height:${s-8}px;object-fit:contain" loading="lazy"></div>`
+      });
+    }
 
     function fitAllMarkers() {
       if (!leafletMap) return;
@@ -765,9 +788,9 @@
           if (c) { lat = parseFloat(c.lat); lng = parseFloat(c.lng); }
         }
         if (!lat || !lng) return;
-        const marker = L.circleMarker([lat, lng], { ...MARKER_DEFAULT })
+        const marker = L.marker([lat, lng], { icon: createVendorIcon(v, false) })
           .addTo(leafletMap)
-          .bindTooltip(v.name, { permanent: false, direction: 'top', offset: [0, -8] });
+          .bindTooltip(v.name, { permanent: false, direction: 'top', offset: [0, -4] });
         marker.on('click', () => {
           const idx = allVendors.indexOf(v);
           if (idx >= 0) {
@@ -775,7 +798,7 @@
             selectVendor(idx);
           }
         });
-        vendorMarkers.push({ vendorId: v.id, marker, lat, lng });
+        vendorMarkers.push({ vendorId: v.id, vendor: v, marker, lat, lng });
         bounds.push([lat, lng]);
       });
       if (bounds.length > 1) leafletMap.fitBounds(bounds, { padding: [36, 36], maxZoom: 15 });
@@ -784,12 +807,9 @@
 
     function highlightMapMarker(vendorId) {
       vendorMarkers.forEach(m => {
-        if (m.vendorId === vendorId) {
-          m.marker.setStyle(MARKER_SELECTED);
-          leafletMap.setView([m.lat, m.lng], Math.max(leafletMap.getZoom(), 16), { animate: true });
-        } else {
-          m.marker.setStyle(MARKER_DEFAULT);
-        }
+        const sel = m.vendorId === vendorId;
+        m.marker.setIcon(createVendorIcon(m.vendor, sel));
+        if (sel) leafletMap.setView([m.lat, m.lng], Math.max(leafletMap.getZoom(), 16), { animate: true });
       });
     }
 
@@ -822,7 +842,7 @@
       if (ev) ev.stopPropagation();
       selectedVendor = null;
       expandedVendorId = null;
-      vendorMarkers.forEach(m => m.marker.setStyle(MARKER_DEFAULT));
+      vendorMarkers.forEach(m => m.marker.setIcon(createVendorIcon(m.vendor, false)));
       fitAllMarkers();
       renderList(currentListVendors);
     }
