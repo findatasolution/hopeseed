@@ -8,6 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap&subset=vietnamese" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxuvwv/b4jzlGC62Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="icon" href="https://ik.imagekit.io/o2u9hny2s/hopeseed/LOGO8.png" type="image/png">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
   <style>
     :root {
@@ -98,7 +100,9 @@
       body.app-mode .app-col { height: 100%; min-height: 0; display: flex; flex-direction: column; }
       body.app-mode .app-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
       body.app-mode .app-flex1 { flex: 1 1 auto; min-height: 0; }
-      body.app-mode #mapFrame { height: 100% !important; }
+      body.app-mode #mapDiv { height: 100% !important; min-height: 0 !important; }
+    /* Override leaflet z-index to stay below our UI */
+    .leaflet-top, .leaflet-bottom { z-index: 400; }
     }
 
     /* ===== Mobile bottom nav (mockup): Danh sách / Bản đồ / + Đóng góp / Xét duyệt ===== */
@@ -142,7 +146,7 @@
       #panelMap:not(.mobile-show-map) #mapColumn { display: none; }
       #panelMap:not(.mobile-show-list) #listColumn { display: none; }
       #mapColumn .glass-card { height: 60vh; }
-      #mapColumn #mapFrame { height: 100% !important; }
+      #mapColumn #mapDiv { height: 100%; }
 
       /* Căn giữa nội dung chính (tiêu đề, mô tả...), giữ căn trái cho nội dung đọc/gõ */
       #heroSection, #panelMap > h2, #panelForm h2, #panelForm p, #panelReview h2, #panelReview p { text-align: center; }
@@ -235,9 +239,7 @@
         <!-- RIGHT: map -->
         <div id="mapColumn" class="app-col space-y-6">
           <div class="app-flex1 glass-card rounded-3xl p-2 overflow-hidden">
-            <iframe id="mapFrame" class="w-full h-[280px] rounded-2xl" style="border:0"
-              loading="lazy" referrerpolicy="no-referrer-when-downgrade"
-              src="https://www.google.com/maps?q=Th%C3%A0nh+ph%E1%BB%91+H%E1%BB%93+Ch%C3%AD+Minh&z=11&output=embed"></iframe>
+            <div id="mapDiv" class="w-full rounded-2xl" style="min-height:280px"></div>
           </div>
         </div>
       </div>
@@ -429,6 +431,7 @@
       if (tab === 'form') renderAuthState();
       if (tab === 'review') loadPendingVendors();
       if (tab !== 'map') exitAppMode();
+      if (tab === 'map') setTimeout(() => leafletMap && leafletMap.invalidateSize(), 80);
     }
 
     // ===== Auth (Stack Auth - email/mật khẩu thật, publishable key an toàn để public) =====
@@ -659,24 +662,66 @@
       list.innerHTML = vendors.map((v, i) => vendorRowHtml(v, allVendors.indexOf(v))).join('');
     }
 
-    // Cố gắng lấy toạ độ thật từ chính link Google Maps người dùng dán vào (nhiều link dài
-    // có toạ độ ngay trong URL, vd .../@10.77,106.70,17z hoặc ?q=10.77,106.70). Link rút gọn
-    // dạng maps.app.goo.gl thì không parse được (không lộ toạ độ ra ngoài), khi đó mới fallback
-    // đoán theo địa chỉ text - kém chính xác hơn link thật nên luôn kèm nút "Mở vị trí chính xác".
-    // Google Maps "Chia sẻ > Nhúng bản đồ (Embed a map)" cho ra 1 đoạn <iframe src="https://www.google.com/maps/embed?pb=...">
-    // - đây là cách CHÍNH XÁC NHẤT (không cần đoán toạ độ). Cho phép người dùng dán cả đoạn iframe
-    // hoặc chỉ riêng URL src đó vào ô "Link Google Maps", ta lấy ra dùng thẳng làm src cho khung xem.
-    function extractEmbedIframeSrc(input) {
-      if (!input) return null;
-      const iframeMatch = input.match(/<iframe[^>]+src=["']([^"']+)["']/i);
-      if (iframeMatch) return iframeMatch[1];
-      if (/^https:\/\/www\.google\.com\/maps\/embed/i.test(input.trim())) return input.trim();
-      return null;
+    // ===== Leaflet map =====
+    let leafletMap = null;
+    let vendorMarkers = []; // [{vendorId, marker, lat, lng}]
+
+    const MARKER_DEFAULT = { radius: 8, fillColor: '#0284c7', color: '#fff', weight: 2.5, fillOpacity: 0.92 };
+    const MARKER_SELECTED = { radius: 11, fillColor: '#ef4444', color: '#fff', weight: 2.5, fillOpacity: 0.95 };
+
+    function initLeafletMap() {
+      if (leafletMap) return;
+      const el = document.getElementById('mapDiv');
+      if (!el) return;
+      leafletMap = L.map('mapDiv', { zoomControl: true })
+        .setView([10.7769, 106.7009], 13);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com">CARTO</a>',
+        subdomains: 'abcd', maxZoom: 19
+      }).addTo(leafletMap);
     }
 
-    // Một số link Google Maps dài (không phải link rút gọn maps.app.goo.gl) có lộ toạ độ ngay
-    // trong URL - cờ "order" đánh dấu vì có chỗ là lat,lng, có chỗ (link nhúng cũ kiểu pb=) lại
-    // là lng,lat (!2d=kinh độ, !3d=vĩ độ).
+    function updateMapMarkers(vendors) {
+      if (!leafletMap) return;
+      vendorMarkers.forEach(m => m.marker.remove());
+      vendorMarkers = [];
+      const bounds = [];
+      vendors.forEach(v => {
+        let lat = parseFloat(v.lat), lng = parseFloat(v.lng);
+        if (!lat || !lng) {
+          const c = extractLatLngFromMapsUrl(v.maps_url);
+          if (c) { lat = parseFloat(c.lat); lng = parseFloat(c.lng); }
+        }
+        if (!lat || !lng) return;
+        const marker = L.circleMarker([lat, lng], { ...MARKER_DEFAULT })
+          .addTo(leafletMap)
+          .bindTooltip(v.name, { permanent: false, direction: 'top', offset: [0, -8] });
+        marker.on('click', () => {
+          const idx = allVendors.indexOf(v);
+          if (idx >= 0) {
+            if (window.innerWidth < 1024) switchTab('map', 'list');
+            selectVendor(idx);
+          }
+        });
+        vendorMarkers.push({ vendorId: v.id, marker, lat, lng });
+        bounds.push([lat, lng]);
+      });
+      if (bounds.length > 1) leafletMap.fitBounds(bounds, { padding: [36, 36], maxZoom: 15 });
+      else if (bounds.length === 1) leafletMap.setView(bounds[0], 16);
+    }
+
+    function highlightMapMarker(vendorId) {
+      vendorMarkers.forEach(m => {
+        if (m.vendorId === vendorId) {
+          m.marker.setStyle(MARKER_SELECTED);
+          leafletMap.setView([m.lat, m.lng], Math.max(leafletMap.getZoom(), 16), { animate: true });
+        } else {
+          m.marker.setStyle(MARKER_DEFAULT);
+        }
+      });
+    }
+
+    // Lấy toạ độ từ link Google Maps (nhiều định dạng: @lat,lng / ?q=lat,lng / !2d!3d)
     function extractLatLngFromMapsUrl(url) {
       if (!url) return null;
       const patterns = [
@@ -692,24 +737,12 @@
       return null;
     }
 
-    function mapEmbedSrc(v) {
-      if (!v) return 'https://www.google.com/maps?q=Th%C3%A0nh+ph%E1%BB%91+H%E1%BB%93+Ch%C3%AD+Minh&z=11&output=embed';
-      const embedSrc = extractEmbedIframeSrc(v.maps_url);
-      if (embedSrc) return embedSrc;
-      if (v.lat && v.lng) return `https://www.google.com/maps?q=${v.lat},${v.lng}&output=embed`;
-      const fromUrl = extractLatLngFromMapsUrl(v.maps_url);
-      if (fromUrl) return `https://www.google.com/maps?q=${fromUrl.lat},${fromUrl.lng}&output=embed`;
-      return `https://www.google.com/maps?q=${encodeURIComponent(v.address || v.name)}&output=embed`;
-    }
-
-    // Click vào 1 gánh hàng -> ô chi tiết hiện NGAY tại vị trí của dòng đó trong danh sách
-    // (thay vì 1 khung chi tiết cố định riêng), bản đồ bên phải cũng cập nhật theo.
     function selectVendor(idx) {
       const v = allVendors[idx];
       if (!v) return;
       selectedVendor = v;
       expandedVendorId = v.id;
-      document.getElementById('mapFrame').src = mapEmbedSrc(v);
+      highlightMapMarker(v.id);
       renderList(currentListVendors);
     }
 
@@ -717,7 +750,7 @@
       if (ev) ev.stopPropagation();
       selectedVendor = null;
       expandedVendorId = null;
-      document.getElementById('mapFrame').src = mapEmbedSrc(null);
+      vendorMarkers.forEach(m => m.marker.setStyle(MARKER_DEFAULT));
       renderList(currentListVendors);
     }
 
@@ -791,9 +824,12 @@
         allVendors = await res.json();
         if (!allVendors.length) {
           list.innerHTML = '<p class="text-sm text-slate-500">Chưa có gánh hàng nào được duyệt. Hãy là người đóng góp đầu tiên!</p>';
+          initLeafletMap();
           return;
         }
         renderList(allVendors);
+        initLeafletMap();
+        updateMapMarkers(allVendors);
       } catch (err) {
         console.error(err);
         list.innerHTML = '<p class="text-sm text-red-500">Không tải được danh sách. Vui lòng thử lại sau.</p>';
@@ -975,6 +1011,7 @@
       setToolbarHeightVar();
       document.body.classList.add('app-mode');
       document.body.style.overflow = 'hidden';
+      setTimeout(() => leafletMap && leafletMap.invalidateSize(), 120);
     }
 
     function exitAppMode() {
