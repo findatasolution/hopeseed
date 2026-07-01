@@ -210,7 +210,6 @@
         <div id="listColumn" class="app-col glass-card rounded-3xl p-6 md:p-8">
           <div class="flex items-center justify-between flex-shrink-0 pb-4">
             <h2 class="text-xl font-semibold text-slate-900">Danh sách gánh hàng đã duyệt</h2>
-            <button onclick="loadVendors()" class="text-sm text-blue-600 hover:underline"><i class="fas fa-rotate-right mr-1"></i>Tải lại</button>
           </div>
           <div id="vendorList" class="app-scroll space-y-3">
             <p class="text-sm text-slate-500">Đang tải danh sách...</p>
@@ -561,11 +560,17 @@
       return `filter: brightness(${brightness}) grayscale(${grayscale}%); transition: filter .3s ease;`;
     }
 
+    function fmtHearts(n) {
+      if (n >= 1e6) return Math.floor(n/1e6) + 'm';
+      if (n >= 1e3) return Math.floor(n/1e3) + 'k';
+      return String(n);
+    }
+
     function heartWidgetHtml(v) {
       const hearts = v.hearts_today || 0;
       return `
         <div class="flex flex-col items-center gap-1 flex-shrink-0 w-14" onclick="event.stopPropagation()">
-          <span class="text-[11px] font-bold text-slate-600">${hearts} tim</span>
+          <span class="text-[11px] font-bold text-slate-600">${fmtHearts(hearts)}</span>
           <img src="https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/sun.png" alt="Độ nhộn nhịp hôm nay"
             class="w-7 h-7" style="${sunFilter(hearts)}"/>
           <button type="button" onclick="giveHeart(${v.id}, this)" title="Thả tim nếu hôm nay bạn ghé thăm"
