@@ -19,6 +19,23 @@
       --card-border: rgba(2, 132, 199, 0.2);
     }
     html, body { width: 100%; overflow-x: hidden; }
+
+    /* ===== Toast notifications ===== */
+    #toastContainer {
+      position: fixed; top: 18px; left: 50%; transform: translateX(-50%);
+      z-index: 9999; display: flex; flex-direction: column; gap: 8px;
+      pointer-events: none; width: max-content; max-width: min(340px, 92vw);
+    }
+    .toast {
+      background: rgba(15,23,42,.92); color: #fff; padding: 12px 18px;
+      border-radius: 16px; font-size: 13.5px; font-weight: 600; line-height: 1.4;
+      box-shadow: 0 8px 28px -4px rgba(0,0,0,.35); backdrop-filter: blur(14px);
+      opacity: 0; transform: translateY(-10px); transition: opacity .22s, transform .22s;
+      text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: rgba(185,28,28,.92); }
+    .toast.success { background: rgba(5,150,105,.92); }
     body{
       font-family: 'Nunito','Be Vietnam Pro','Noto Sans','Segoe UI',system-ui,-apple-system,sans-serif;
       background: linear-gradient(125deg, #e0f2fe 0%, #bae6fd 45%, #ffffff 100%); color: #083344;
@@ -139,6 +156,7 @@
   </style>
 </head>
 <body class="relative text-slate-700">
+  <div id="toastContainer"></div>
   <div class="relative z-10">
     <!-- HERO -->
     <header id="heroSection" class="max-w-6xl mx-auto px-6 pt-8">
@@ -558,6 +576,18 @@
       return `filter: brightness(${brightness}) grayscale(${grayscale}%); transition: filter .3s ease;`;
     }
 
+    function showToast(msg, type = 'info') {
+      const el = document.createElement('div');
+      el.className = 'toast' + (type === 'error' ? ' error' : type === 'success' ? ' success' : '');
+      el.textContent = msg;
+      document.getElementById('toastContainer').appendChild(el);
+      requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+      setTimeout(() => {
+        el.classList.remove('show');
+        el.addEventListener('transitionend', () => el.remove(), { once: true });
+      }, 3200);
+    }
+
     function fmtHearts(n) {
       if (n >= 1e6) return Math.floor(n/1e6) + 'm';
       if (n >= 1e3) return Math.floor(n/1e3) + 'k';
@@ -567,13 +597,11 @@
     function heartWidgetHtml(v) {
       const hearts = v.hearts_today || 0;
       return `
-        <div class="flex flex-col items-center gap-1 flex-shrink-0 w-14" onclick="event.stopPropagation()">
-          <span class="text-[11px] font-bold text-slate-600">${fmtHearts(hearts)}</span>
-          <img src="https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/sun.png" alt="Độ nhộn nhịp hôm nay"
-            class="w-7 h-7" style="${sunFilter(hearts)}"/>
+        <div class="flex flex-col items-center gap-1 flex-shrink-0 w-10" onclick="event.stopPropagation()">
           <button type="button" onclick="giveHeart(${v.id}, this)" title="Thả tim nếu hôm nay bạn ghé thăm"
-            class="flex items-center justify-center w-7 h-7 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 hover:scale-110 transition leading-none"
-            style="font-size:16px">♥</button>
+            class="flex items-center justify-center w-8 h-8 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 hover:scale-110 transition leading-none"
+            style="font-size:18px">♥</button>
+          <span class="text-[11px] font-bold text-slate-500">${fmtHearts(hearts)}</span>
         </div>`;
     }
 
@@ -698,7 +726,7 @@
     async function giveHeart(vendorId, btnEl) {
       const token = await getValidAccessToken();
       if (!token) {
-        alert('Vui lòng đăng nhập (tab "Đóng góp thông tin") để thả tim ủng hộ gánh hàng này.');
+        showToast('Vui lòng đăng nhập để thả tim ủng hộ gánh hàng này.');
         switchTab('form');
         return;
       }
@@ -721,14 +749,14 @@
         } else {
           const body = await res.json().catch(() => ({}));
           if (body.code === '23505') {
-            alert('Bạn đã thả tim cho gánh này hôm nay rồi. Hẹn mai ghé lại nhé!');
+            showToast('Bạn đã thả tim cho gánh này hôm nay rồi. Hẹn mai ghé lại nhé! 💙');
           } else {
             throw new Error(body.message || `HTTP ${res.status}`);
           }
         }
       } catch (err) {
         console.error(err);
-        alert('Thả tim thất bại: ' + err.message);
+        showToast('Thả tim thất bại: ' + err.message, 'error');
       } finally {
         btnEl.disabled = false;
       }
@@ -855,14 +883,14 @@
         } else {
           const body = await res.json().catch(() => ({}));
           if (body.code === '23505') {
-            alert('Bạn đã duyệt gánh hàng này rồi.');
+            showToast('Bạn đã duyệt gánh hàng này rồi.');
           } else {
             throw new Error(body.message || `HTTP ${res.status}`);
           }
         }
       } catch (err) {
         console.error(err);
-        alert('Duyệt thất bại: ' + err.message);
+        showToast('Duyệt thất bại: ' + err.message, 'error');
         btnEl.disabled = false;
       }
     }
