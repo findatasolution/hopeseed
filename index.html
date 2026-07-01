@@ -92,23 +92,25 @@
       box-shadow: 0 16px 40px -12px rgba(2,132,199,.35);
     }
     .mobile-nav-btn {
-      display: flex; flex-direction: column; align-items: center; gap: 3px;
-      padding: 8px 10px; border-radius: 14px; color: #64748b; font-size: 11px; font-weight: 700;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 10px 12px; border-radius: 14px; color: #64748b;
       flex: 1 1 0; min-width: 0;
     }
-    .mobile-nav-btn .nav-icon { width: 21px; height: 21px; }
+    .mobile-nav-btn .nav-icon { width: 22px; height: 22px; }
     .mobile-nav-btn.active { color: var(--accent-strong); background: var(--accent-soft); }
 
     /* ===== Mobile/Tablet (< 1024px): toolbar trên cùng chỉ còn ô tìm kiếm, điều hướng
        chuyển xuống bottom nav, panel Bản đồ tách 2 chế độ Danh sách/Bản đồ riêng,
        nội dung chính căn giữa 2 lề. App-mode (desktop) không bao giờ kích hoạt ở đây. */
     @media (max-width: 1023px) {
-      body { padding-bottom: 96px; } /* chừa chỗ cho bottom nav cố định */
+      body { padding-bottom: 80px; }
       #mobileBottomBar {
         display: block; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-        padding: 0 16px 16px;
+        padding: 0 12px 12px;
       }
-      #toolbarSection { margin-top: 16px !important; padding-left: 24px; padding-right: 24px; }
+      #panelMap { padding-left: 10px !important; padding-right: 10px !important; }
+      #listColumn { padding: 12px !important; }
+      #toolbarSection { margin-top: 16px !important; padding-left: 12px; padding-right: 12px; }
       #toolbarSection .toolbar {
         background: transparent; box-shadow: none; backdrop-filter: none; padding: 0;
       }
@@ -180,25 +182,21 @@
             <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
             <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
           </svg>
-          <span>Danh sách</span>
         </button>
         <button type="button" class="mobile-nav-btn" data-tab="map" data-subview="map" onclick="switchTab('map','map')">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
           </svg>
-          <span>Bản đồ</span>
         </button>
         <button type="button" class="mobile-nav-btn" data-tab="form" onclick="switchTab('form')">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          <span>Đóng góp</span>
         </button>
         <button type="button" class="mobile-nav-btn" data-tab="review" onclick="switchTab('review')">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
           </svg>
-          <span>Xét duyệt</span>
         </button>
       </div>
     </nav>
@@ -605,19 +603,19 @@
 
     function vendorDetailCardHtml(v) {
       return `
-        <div class="rounded-2xl border border-blue-200/60 bg-white/90 p-4 flex items-start gap-4">
-          <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-[120px] w-[120px] object-contain flex-shrink-0"/>
-          <div class="min-w-0 flex-1 space-y-1">
-            <div class="flex items-center justify-between gap-2">
-              <h3 class="font-semibold text-slate-900 text-lg">${escapeHtml(v.name)}</h3>
-              <button type="button" onclick="collapseVendor(event)" class="text-slate-400 hover:text-slate-600"><i class="fas fa-xmark"></i></button>
-            </div>
-            <p class="text-sm text-slate-600">${escapeHtml(v.description)}</p>
+        <div class="rounded-2xl border border-blue-200/60 bg-white/90 p-3">
+          <div class="flex items-center gap-3 pb-3 border-b border-blue-100">
+            <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-14 w-14 object-contain flex-shrink-0"/>
+            <h3 class="font-semibold text-slate-900 text-base flex-1 leading-snug">${escapeHtml(v.name)}</h3>
+            <button type="button" onclick="collapseVendor(event)" class="flex-shrink-0 text-slate-400 hover:text-slate-600 p-1"><i class="fas fa-xmark"></i></button>
+          </div>
+          <div class="pt-3 space-y-1.5">
+            ${v.description ? `<p class="text-sm text-slate-600">${escapeHtml(v.description)}</p>` : ''}
             ${v.opening_hours ? `<p class="text-xs text-slate-500"><i class="fas fa-clock mr-1"></i>${escapeHtml(v.opening_hours)}</p>` : ''}
             <p class="text-xs text-slate-500"><i class="fas fa-location-dot mr-1"></i>${escapeHtml(v.address)}</p>
             ${tagChips(v)}
-            <div class="flex items-center gap-3 pt-2">${socialIcons(v)}</div>
-            <input type="text" placeholder="Ghi chú mọi thứ về Gánh hàng rong này"
+            <div class="flex items-center gap-3 pt-1">${socialIcons(v)}</div>
+            <input type="text" placeholder="Ghi chú của bạn"
               class="mt-1 w-full rounded-full border border-blue-200/60 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/>
           </div>
         </div>`;
