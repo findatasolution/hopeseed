@@ -24,6 +24,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap&subset=vietnamese" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxuvwv/b4jzlGC62Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="icon" href="https://ik.imagekit.io/o2u9hny2s/hopeseed/LOGO8.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://ik.imagekit.io" crossorigin/>
+  <link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
@@ -208,6 +211,7 @@
             Nơi cộng đồng cùng nhau lưu lại địa chỉ, hình ảnh và mạng xã hội của các gánh hàng rong quen thuộc —
             giúp mọi người dễ dàng tìm đến ủng hộ. Hãy yêu thương và gìn giữ văn hoá Việt.
           </p>
+          <p id="heroStats" class="text-sm font-semibold text-sky-600 tracking-wide"></p>
         </div>
         <img id="heroIllustration" src="https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/maincharactor.png"
           alt="Gánh hàng rong" class="w-[27rem] sm:w-[40rem] mx-auto md:ml-auto md:mr-0 object-contain relative z-0" loading="lazy"/>
@@ -657,7 +661,8 @@
       if (expandedVendorId === v.id) return vendorDetailCardHtml(v);
 
       const district = extractDistrict(v.address);
-      const meta = [v.category, district].filter(Boolean).join(' · ');
+      const dist = fmtDist(vendorDistKm(v));
+      const meta = [v.category, district, dist].filter(Boolean).join(' · ');
       return `
         <div class="vendor-row flex items-center gap-3 rounded-2xl border border-transparent p-3" onclick="selectVendor(${idx})">
           <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-[84px] w-[84px] object-contain flex-shrink-0"/>
@@ -691,6 +696,10 @@
               class="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-blue-200 bg-white hover:bg-blue-50 text-slate-500 hover:text-blue-600">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
             </a>
+            <button type="button" onclick="shareVendor(${v.id})" title="Chia sẻ"
+              class="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-blue-200 bg-white hover:bg-blue-50 text-slate-500 hover:text-blue-600">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            </button>
             <button type="button" onclick="collapseVendor(event)" class="flex-shrink-0 text-slate-400 hover:text-slate-600 p-1"><i class="fas fa-xmark"></i></button>
           </div>
           <div class="pt-3 space-y-1.5">
@@ -754,6 +763,8 @@
           .addTo(leafletMap)
           .bindTooltip('Vị trí của bạn', { permanent: false, direction: 'top' });
         if (!silent) leafletMap.setView([lat, lng], 15, { animate: true });
+        userLocation = { lat, lng };
+        sortByDistance();
       }, () => {
         if (!silent) showToast('Không lấy được vị trí. Hãy cho phép trình duyệt truy cập.', 'error');
       });
@@ -925,6 +936,66 @@
       }
     }
 
+    // ===== Distance & sort =====
+    let userLocation = null;
+
+    function haversineKm(lat1, lng1, lat2, lng2) {
+      const R = 6371, r = Math.PI / 180;
+      const dLat = (lat2 - lat1) * r, dLng = (lng2 - lng1) * r;
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*r) * Math.cos(lat2*r) * Math.sin(dLng/2)**2;
+      return R * 2 * Math.asin(Math.sqrt(a));
+    }
+
+    function vendorDistKm(v) {
+      if (!userLocation) return null;
+      let lat = parseFloat(v.lat), lng = parseFloat(v.lng);
+      if (!lat || !lng) {
+        const c = extractLatLngFromMapsUrl(v.maps_url);
+        if (c) { lat = parseFloat(c.lat); lng = parseFloat(c.lng); }
+      }
+      if (!lat || !lng) return null;
+      return haversineKm(userLocation.lat, userLocation.lng, lat, lng);
+    }
+
+    function fmtDist(km) {
+      if (km === null) return '';
+      return km < 1 ? Math.round(km * 1000) + ' m' : km.toFixed(1) + ' km';
+    }
+
+    function sortByDistance() {
+      allVendors.sort((a, b) => {
+        const da = vendorDistKm(a), db = vendorDistKm(b);
+        if (da === null && db === null) return 0;
+        if (da === null) return 1;
+        if (db === null) return -1;
+        return da - db;
+      });
+      renderList(allVendors);
+    }
+
+    // ===== Share =====
+    async function shareVendor(vendorId) {
+      const v = allVendors.find(v => v.id === vendorId);
+      if (!v) return;
+      const url = `${location.origin}${location.pathname}?v=${vendorId}`;
+      if (navigator.share) {
+        try { await navigator.share({ title: v.name, text: v.address, url }); } catch (_) {}
+      } else {
+        try {
+          await navigator.clipboard.writeText(url);
+          showToast('Đã sao chép link! Chia sẻ cho bạn bè nhé 💙', 'success');
+        } catch (_) { showToast(url); }
+      }
+    }
+
+    // ===== Stats =====
+    function updateHeroStats() {
+      const el = document.getElementById('heroStats');
+      if (!el || !allVendors.length) return;
+      const hearts = allVendors.reduce((s, v) => s + (v.hearts_today || 0), 0);
+      el.textContent = `${allVendors.length} gánh hàng · ${fmtHearts(hearts)} ♥ hôm nay`;
+    }
+
     async function loadVendors() {
       expandedVendorId = null;
       selectedVendor = null;
@@ -942,8 +1013,12 @@
           return;
         }
         renderList(allVendors);
+        updateHeroStats();
         initLeafletMap();
         updateMapMarkers(allVendors);
+        // Deep link: ?v=<id> → auto-select vendor
+        const deepId = parseInt(new URLSearchParams(location.search).get('v'));
+        if (deepId) { const di = allVendors.findIndex(v => v.id === deepId); if (di >= 0) selectVendor(di); }
       } catch (err) {
         console.error(err);
         list.innerHTML = '<p class="text-sm text-red-500">Không tải được danh sách. Vui lòng thử lại sau.</p>';
