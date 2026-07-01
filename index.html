@@ -37,6 +37,27 @@
     }
     .toast.show { opacity: 1; transform: translateY(0); }
     .toast.error { background: rgba(185,28,28,.92); }
+
+    /* User location dot (pulsing) */
+    .user-loc-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #0284c7; border: 2.5px solid #fff;
+      box-shadow: 0 2px 6px rgba(2,132,199,.5);
+      animation: pulse-loc 1.8s infinite;
+    }
+    @keyframes pulse-loc {
+      0%   { box-shadow: 0 0 0 0   rgba(2,132,199,.55); }
+      70%  { box-shadow: 0 0 0 10px rgba(2,132,199,0);  }
+      100% { box-shadow: 0 0 0 0   rgba(2,132,199,0);   }
+    }
+    /* Map custom control buttons */
+    .map-ctrl-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: 8px; margin-bottom: 4px;
+      background: #fff; border: 1px solid rgba(0,0,0,.12);
+      box-shadow: 0 2px 8px rgba(0,0,0,.15); cursor: pointer; color: #334155;
+    }
+    .map-ctrl-btn:hover { background: #e0f2fe; color: #0284c7; }
     .toast.success { background: rgba(5,150,105,.92); }
     body{
       font-family: 'Nunito','Be Vietnam Pro','Noto Sans','Segoe UI',system-ui,-apple-system,sans-serif;
@@ -319,6 +340,7 @@
                 <option>Sinh tố</option>
                 <option>Trà tắc</option>
                 <option>Xôi</option>
+                <option>Xe ôm</option>
                 <option>Khác</option>
               </select>
             </div>
@@ -665,9 +687,58 @@
     // ===== Leaflet map =====
     let leafletMap = null;
     let vendorMarkers = []; // [{vendorId, marker, lat, lng}]
+    let userLocMarker = null;
 
-    const MARKER_DEFAULT = { radius: 8, fillColor: '#0284c7', color: '#fff', weight: 2.5, fillOpacity: 0.92 };
+    const MARKER_DEFAULT  = { radius: 8,  fillColor: '#0284c7', color: '#fff', weight: 2.5, fillOpacity: 0.92 };
     const MARKER_SELECTED = { radius: 11, fillColor: '#ef4444', color: '#fff', weight: 2.5, fillOpacity: 0.95 };
+
+    function fitAllMarkers() {
+      if (!leafletMap) return;
+      const pts = vendorMarkers.map(m => [m.lat, m.lng]);
+      if (userLocMarker) pts.push([userLocMarker.getLatLng().lat, userLocMarker.getLatLng().lng]);
+      if (pts.length > 1) leafletMap.fitBounds(pts, { padding: [36, 36], maxZoom: 15 });
+      else if (pts.length === 1) leafletMap.setView(pts[0], 14);
+    }
+
+    function requestUserLocation() {
+      if (!navigator.geolocation) { showToast('Trình duyệt không hỗ trợ định vị.', 'error'); return; }
+      navigator.geolocation.getCurrentPosition(pos => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        if (userLocMarker) userLocMarker.remove();
+        const icon = L.divIcon({
+          className: '', iconSize: [14, 14], iconAnchor: [7, 7],
+          html: '<div class="user-loc-dot"></div>'
+        });
+        userLocMarker = L.marker([lat, lng], { icon, zIndexOffset: 1000 })
+          .addTo(leafletMap)
+          .bindTooltip('Vị trí của bạn', { permanent: false, direction: 'top' });
+        leafletMap.setView([lat, lng], 15, { animate: true });
+      }, () => showToast('Không lấy được vị trí. Hãy cho phép trình duyệt truy cập.', 'error'));
+    }
+
+    function addMapControls() {
+      // Nút "về tất cả pin"
+      const fitCtrl = L.control({ position: 'topright' });
+      fitCtrl.onAdd = () => {
+        const btn = L.DomUtil.create('button', 'map-ctrl-btn');
+        btn.title = 'Xem tất cả gánh hàng';
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>';
+        L.DomEvent.on(btn, 'click', e => { L.DomEvent.stopPropagation(e); fitAllMarkers(); });
+        return btn;
+      };
+      fitCtrl.addTo(leafletMap);
+
+      // Nút định vị user
+      const locCtrl = L.control({ position: 'topright' });
+      locCtrl.onAdd = () => {
+        const btn = L.DomUtil.create('button', 'map-ctrl-btn');
+        btn.title = 'Vị trí của tôi';
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>';
+        L.DomEvent.on(btn, 'click', e => { L.DomEvent.stopPropagation(e); requestUserLocation(); });
+        return btn;
+      };
+      locCtrl.addTo(leafletMap);
+    }
 
     function initLeafletMap() {
       if (leafletMap) return;
@@ -679,6 +750,7 @@
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com">CARTO</a>',
         subdomains: 'abcd', maxZoom: 19
       }).addTo(leafletMap);
+      addMapControls();
     }
 
     function updateMapMarkers(vendors) {
@@ -751,6 +823,7 @@
       selectedVendor = null;
       expandedVendorId = null;
       vendorMarkers.forEach(m => m.marker.setStyle(MARKER_DEFAULT));
+      fitAllMarkers();
       renderList(currentListVendors);
     }
 

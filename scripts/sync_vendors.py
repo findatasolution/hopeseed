@@ -57,6 +57,7 @@ CATEGORY_ICON_SLUGS = {
     "Sinh tố": "sinhto",
     "Trà tắc": "tratac",
     "Xôi": "xoi",
+    "Xe ôm": "xeom",
 }
 DEFAULT_ICON_URL = f"{IMAGEKIT_ENDPOINT}/hopeseed/platform_assets/maincharactor.png"
 
