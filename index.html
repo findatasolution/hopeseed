@@ -231,7 +231,7 @@
           <i class="fas fa-check-double"></i><span class="tab-label ml-1">Xét duyệt thông tin</span>
         </button>
         <div class="toolbar-search">
-          <i class="fas fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <i class="fas fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm z-10 pointer-events-none"></i>
           <input id="searchInput" type="text" placeholder="" oninput="handleSearch(this.value)"/>
         </div>
       </div>
@@ -336,7 +336,7 @@
             </div>
 
             <div class="field sm:col-span-2">
-              <label for="v_category">Loại món (chọn icon hiển thị) <span class="text-red-500">*</span></label>
+              <label for="v_category">Loại món <span class="text-red-500">*</span></label>
               <select id="v_category" required>
                 <option value="">-- Chọn loại món --</option>
                 <option>Bánh mì</option>
@@ -354,6 +354,7 @@
                 <option>Trà tắc</option>
                 <option>Xôi</option>
                 <option>Xe ôm</option>
+                <option>Trái cây</option>
                 <option>Khác</option>
               </select>
             </div>
@@ -397,8 +398,8 @@
 
             <div class="sm:col-span-2 flex items-center justify-between pt-2">
               <p id="vendorFormMsg" class="text-sm"></p>
-              <button type="submit" id="vendorSubmitBtn" class="btn-flat rounded-full px-6 py-3 font-medium shadow-lg transition hover:-translate-y-0.5">
-                <i class="fas fa-paper-plane mr-1"></i> Gửi thông tin
+              <button type="submit" id="vendorSubmitBtn" class="btn-flat rounded-full px-5 py-2 text-sm font-semibold shadow transition hover:-translate-y-0.5">
+                Gửi
               </button>
             </div>
           </form>
@@ -1164,6 +1165,7 @@
         }
         msg.textContent = 'Cảm ơn! Thông tin đã được ghi nhận và đang chờ duyệt.';
         msg.className = 'text-sm text-green-600';
+        btn.textContent = 'Đã gửi ✓';
         document.getElementById('vendorForm').reset();
       } catch (err) {
         console.error(err);
@@ -1172,6 +1174,7 @@
       } finally {
         btn.disabled = false;
         btn.classList.remove('opacity-60');
+        if (!btn.textContent.includes('Đã gửi')) btn.textContent = 'Gửi';
       }
     }
 

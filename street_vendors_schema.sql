@@ -75,6 +75,7 @@ BEGIN
       WHEN 'Trà tắc' THEN 'tratac'
       WHEN 'Xôi' THEN 'xoi'
       WHEN 'Xe ôm' THEN 'xeom'
+      WHEN 'Trái cây' THEN 'traicay'
       ELSE NULL
     END;
     NEW.image_url := 'https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/'
