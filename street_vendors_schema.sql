@@ -60,7 +60,11 @@ BEGIN
 
   IF NEW.image_url IS NULL THEN
     slug := CASE NEW.category
+      WHEN 'Bánh bò' THEN 'banhbo'
+      WHEN 'Bánh chuối ép' THEN 'banhchuoiep'
+      WHEN 'Bánh chuối nếp nướng' THEN 'banhchuoinepnuong'
       WHEN 'Bánh mì' THEN 'banhmi'
+      WHEN 'Bánh tai yến' THEN 'banhtaiyen'
       WHEN 'Bắp luộc' THEN 'bapluoc'
       WHEN 'Cà phê' THEN 'caphe'
       WHEN 'Cà phê trứng' THEN 'caphetrung'

@@ -43,7 +43,11 @@ REQUIRED_FIELDS = {"name", "category", "address", "maps_url", "contact_email"}
 # Phải giữ đúng các nhãn (key) trùng với options trong .github/ISSUE_TEMPLATE/gop-y-gang-hang.yml
 # và trong <select id="v_category"> của index.html.
 CATEGORY_ICON_SLUGS = {
+    "Bánh bò": "banhbo",
+    "Bánh chuối ép": "banhchuoiep",
+    "Bánh chuối nếp nướng": "banhchuoinepnuong",
     "Bánh mì": "banhmi",
+    "Bánh tai yến": "banhtaiyen",
     "Bắp luộc": "bapluoc",
     "Cà phê": "caphe",
     "Cà phê trứng": "caphetrung",
