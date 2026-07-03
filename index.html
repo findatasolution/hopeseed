@@ -24,13 +24,25 @@
   <meta name="twitter:description" content="Tìm và ủng hộ các gánh hàng rong quen thuộc tại TP.HCM."/>
   <meta name="twitter:image" content="https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/maincharactor.png"/>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Bản đồ hương vị yêu thương","alternateName":"Ho Chi Minh City Street Food Map","url":"https://hopeseed.space/","description":"Discover authentic Vietnamese street food vendors in Ho Chi Minh City — bánh mì, pho, sugarcane juice, traditional snacks and more. Community-powered sidewalk food map.","applicationCategory":"LifestyleApplication","operatingSystem":"All","inLanguage":["vi","en"],"offers":{"@type":"Offer","price":"0","priceCurrency":"VND"},"areaServed":{"@type":"City","name":"Ho Chi Minh City","alternateName":"Thành phố Hồ Chí Minh","sameAs":"https://www.wikidata.org/wiki/Q1854"}}</script>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-7TV0JCNYFF"></script>
+  <script src="/config.js"></script>
   <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-7TV0JCNYFF');
+    window.HOPESEED_CONFIG = window.HOPESEED_CONFIG || {};
+    const GA_MEASUREMENT_ID = window.HOPESEED_CONFIG.GA_MEASUREMENT_ID || '';
+
+    if (GA_MEASUREMENT_ID) {
+      const gaScript = document.createElement('script');
+      gaScript.async = true;
+      gaScript.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+      document.head.appendChild(gaScript);
+
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      window.gtag = window.gtag || gtag;
+      gtag('js', new Date());
+      gtag('config', GA_MEASUREMENT_ID);
+    } else {
+      console.warn('HOPESEED_CONFIG.GA_MEASUREMENT_ID is not set; Analytics is disabled.');
+    }
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap&subset=vietnamese" rel="stylesheet">
@@ -452,10 +464,15 @@
     // Đăng nhập thật (email/mật khẩu) qua Neon Auth (Stack Auth) - publishable key,
     // an toàn để public (không phải secret). Sau khi đăng nhập, form ghi thẳng vào
     // Neon Data API bằng JWT của phiên đăng nhập - không qua GitHub nữa.
-    const STACK_PROJECT_ID = 'e19df4d4-459f-4eb0-a882-3be4688a2b9e';
-    const STACK_PUBLISHABLE_CLIENT_KEY = 'pck_56th8grc74atk41pae7c4h171th0h223mc4ddpqgttj68';
-    const STACK_API_BASE = 'https://api.stack-auth.com/api/v1';
-    const NEON_DATA_API = 'https://ep-round-bird-ador1751.apirest.c-2.us-east-1.aws.neon.tech/neondb/rest/v1';
+    const CONFIG = window.HOPESEED_CONFIG || {};
+    const STACK_PROJECT_ID = CONFIG.STACK_PROJECT_ID || '';
+    const STACK_PUBLISHABLE_CLIENT_KEY = CONFIG.STACK_PUBLISHABLE_CLIENT_KEY || '';
+    const STACK_API_BASE = CONFIG.STACK_API_BASE || '';
+    const NEON_DATA_API = CONFIG.NEON_DATA_API || '';
+
+    if (!STACK_PROJECT_ID || !STACK_PUBLISHABLE_CLIENT_KEY || !STACK_API_BASE || !NEON_DATA_API) {
+      console.warn('HOPESEED_CONFIG is missing required runtime values. Auth or backend access may not work.');
+    }
 
     // ===== i18n =====
     const STRINGS = {

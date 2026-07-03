@@ -1,0 +1,43 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  pages: write
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate runtime config
+        run: |
+          cat > config.js <<'EOF'
+          window.HOPESEED_CONFIG = {
+            GA_MEASUREMENT_ID: '${{ secrets.GA_MEASUREMENT_ID }}',
+            STACK_PROJECT_ID: '${{ secrets.STACK_PROJECT_ID }}',
+            STACK_PUBLISHABLE_CLIENT_KEY: '${{ secrets.STACK_PUBLISHABLE_CLIENT_KEY }}',
+            STACK_API_BASE: '${{ secrets.STACK_API_BASE }}',
+            NEON_DATA_API: '${{ secrets.NEON_DATA_API }}'
+          };
+          EOF
+
+      - name: Create deploy output
+        run: |
+          rm -rf out
+          mkdir out
+          rsync -av --exclude='.git' --exclude='.github' --exclude='.gitignore' --exclude='.env' --exclude='README.md' --exclude='requirements.txt' --exclude='schema.sql' --exclude='street_vendors_schema.sql' --exclude='database.py' --exclude='main.py' --exclude='auth.py' --exclude='models.py' --exclude='scripts' . out
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: out
