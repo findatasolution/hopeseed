@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Bản đồ hương vị yêu thương | HopeSeed</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <meta name="description" content="Nơi cộng đồng cùng lưu lại địa chỉ, hình ảnh các gánh hàng rong tại TP.HCM — giúp mọi người dễ dàng tìm đến ủng hộ. Hãy yêu thương và gìn giữ văn hoá Việt."/>
   <meta name="keywords" content="gánh hàng rong, bản đồ hàng rong, TP.HCM, đồ ăn đường phố, hương vị Việt, xe đẩy, bánh mì, nước mía, HopeSeed, Ho Chi Minh City street food, Vietnamese street vendors, sidewalk food stalls, banh mi, pho, HCMC food map, authentic Vietnamese food"/>
   <meta name="robots" content="index, follow"/>
@@ -169,57 +169,71 @@
     .leaflet-top, .leaflet-bottom { z-index: 400; }
     }
 
-    /* ===== Mobile bottom nav (mockup): Danh sách / Bản đồ / + Đóng góp / Xét duyệt ===== */
+    /* Mobile navigation stays clear of the home indicator and map layers. */
     #mobileBottomBar { display: none; }
-    .mobile-bar {
-      display: flex; align-items: center; justify-content: space-around;
-      background: #fff; border-radius: 28px; padding: 10px 14px;
-      box-shadow: 0 16px 40px -12px rgba(2,132,199,.35);
-    }
-    .mobile-nav-btn {
-      display: flex; flex-direction: column; align-items: center;
-      padding: 10px 12px; border-radius: 14px; color: #64748b;
-      flex: 1 1 0; min-width: 0;
-    }
-    .mobile-nav-btn .nav-icon { width: 22px; height: 22px; }
+    button, a, input, select, textarea { touch-action: manipulation; }
+    button:focus-visible, a:focus-visible { outline: 3px solid var(--accent-strong); outline-offset: 3px; }
+    .mobile-bar { display: flex; gap: 4px; background: rgba(255,255,255,.97); border: 1px solid var(--card-border); border-radius: 24px; padding: 6px; box-shadow: 0 8px 28px rgba(2,132,199,.16); }
+    .mobile-nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 56px; padding: 6px 2px; border-radius: 18px; color: #64748b; flex: 1 1 0; min-width: 0; font-size: 11px; font-weight: 800; }
+    .mobile-nav-btn .nav-icon { width: 22px; height: 22px; flex-shrink: 0; }
     .mobile-nav-btn.active { color: var(--accent-strong); background: var(--accent-soft); }
+    #vendorList > div { overflow-wrap: anywhere; }
+    .vendor-detail-header h3 { min-width: 0; overflow-wrap: anywhere; }
+    .site-version { text-align: center; padding: 12px 0 24px; font-size: 11px; color: #94a3b8; }
 
-    /* ===== Mobile/Tablet (< 1024px): toolbar trên cùng chỉ còn ô tìm kiếm, điều hướng
-       chuyển xuống bottom nav, panel Bản đồ tách 2 chế độ Danh sách/Bản đồ riêng,
-       nội dung chính căn giữa 2 lề. App-mode (desktop) không bao giờ kích hoạt ở đây. */
     @media (max-width: 1023px) {
-      body { padding-bottom: 80px; }
-      #mobileBottomBar {
-        display: block; position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-        padding: 0 12px 12px;
-      }
-      #panelMap { padding-left: 10px !important; padding-right: 10px !important; }
-      #listColumn { padding: 12px !important; }
-      #toolbarSection { margin-top: 16px !important; padding-left: 12px; padding-right: 12px; }
-      #toolbarSection .toolbar {
-        background: transparent; box-shadow: none; backdrop-filter: none; padding: 0;
-      }
+      body { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+      #mobileBottomBar { display: block; position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; padding: 8px max(12px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); }
+      #heroSection { padding: 24px 16px 0; }
+      #heroSection .grid { grid-template-columns: minmax(0, 1fr) 100px; gap: 12px; }
+      #heroSection .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 10px; }
+      #heroSection h1 { font-size: clamp(22px, 5.5vw, 30px); line-height: 1.2; }
+      #heroSection p { font-size: 13px; line-height: 1.6; }
+      #heroIllustration { width: 100%; max-width: 180px; margin: 0; justify-self: center; }
+      #heroStats { font-size: 12px; letter-spacing: 0; }
+      #toolbarSection { position: sticky; top: 0; z-index: 500; margin-top: 14px !important; padding: 10px 16px; background: rgba(224,242,254,.96); border-bottom: 1px solid var(--card-border); }
+      #toolbarSection .toolbar { gap: 8px; background: transparent; border: 0; box-shadow: none; backdrop-filter: none; padding: 0; }
       #toolbarSection .tab-btn { display: none; }
       #toolbarSection .toolbar-search { max-width: none; margin-left: 0; }
-      #toolbarSection .toolbar-search input {
-        background: #fff; box-shadow: 0 14px 34px -14px rgba(2,132,199,.35); padding: 14px 14px 14px 38px;
-      }
-
-      /* Tab Bản đồ: trên mobile chỉ hiện 1 trong 2 cột tuỳ chế độ Danh sách/Bản đồ */
+      #toolbarSection .toolbar-search input { background: #fff; min-height: 48px; font-size: 16px; padding: 12px 14px 12px 38px; }
+      #langToggle { min-width: 44px; min-height: 44px; }
+      #panelMap, #panelForm, #panelReview { padding: 0 16px !important; margin-top: 16px; margin-bottom: 24px; scroll-margin-top: 84px; }
       #panelMap .grid { display: block; }
-      #panelMap:not(.mobile-show-map) #mapColumn { display: none; }
-      #panelMap:not(.mobile-show-list) #listColumn { display: none; }
-      #mapColumn .glass-card { height: 60vh; }
+      #panelMap:not(.mobile-show-map) #mapColumn, #panelMap:not(.mobile-show-list) #listColumn { display: none; }
+      #listColumn { padding: 14px !important; border-radius: 24px; }
+      #listColumn h2 { font-size: 17px; }
+      #panelForm > .glass-card, #panelReview > .glass-card { padding: 20px 16px; border-radius: 24px; }
+      #mapColumn .glass-card { height: 65vh; height: clamp(280px, calc(100dvh - 176px - env(safe-area-inset-bottom, 0px)), 720px); }
       #mapColumn #mapDiv { height: 100%; }
-
-      /* Căn giữa nội dung chính (tiêu đề, mô tả...), giữ căn trái cho nội dung đọc/gõ */
-      #heroSection, #panelMap > h2, #panelForm h2, #panelForm p, #panelReview h2, #panelReview p { text-align: center; }
-      #heroSection .grid { justify-items: center; }
-      #heroSection p.max-w-xl { margin-left: auto; margin-right: auto; }
-      #listColumn > .flex.items-center.justify-between { justify-content: center; flex-direction: column; gap: 6px; }
-      .vendor-row, .rounded-2xl.border.border-blue-200\/60 { text-align: left; } /* nội dung từng dòng/card vẫn đọc tự nhiên */
-      #vendorForm, #authForm { margin-left: auto; margin-right: auto; }
-      .field { text-align: left; } /* label/input bên trong field giữ căn trái cho dễ đọc/gõ */
+      .map-ctrl-btn { width: 44px; height: 44px; }
+      .leaflet-touch .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; }
+      .field input, .field textarea, .field select, #vendorList input { min-height: 48px; font-size: 16px; }
+      #authGate .tabs { display: flex; max-width: none !important; }
+      #authGate .tab-btn { flex: 1; min-height: 44px; padding: 10px; }
+      #authForm { max-width: none; }
+      #authBar { flex-wrap: wrap; gap: 8px; }
+      #authBar > span { min-width: 0; overflow-wrap: anywhere; }
+      #authBar button, #vendorSubmitBtn { min-height: 44px; }
+      #vendorForm > .flex { flex-wrap: wrap; gap: 12px; }
+      #vendorSubmitBtn { width: 100%; }
+      .vendor-row { gap: 10px; padding: 12px 0; }
+      .vendor-row > img { width: 64px; height: 64px; }
+      .vendor-row .truncate { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+      .vendor-row button { width: 44px; height: 44px; }
+      .vendor-detail-header { display: grid; grid-template-columns: 48px minmax(0, 1fr) repeat(3, 44px); gap: 4px; }
+      .vendor-detail-header > img { width: 44px; height: 44px; }
+      .vendor-detail-header > a, .vendor-detail-header > button { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+      #reviewList { overflow-wrap: anywhere; }
+      #reviewList button { min-height: 44px; }
+    }
+    @media (max-width: 374px) {
+      #heroSection .grid { grid-template-columns: minmax(0, 1fr) 72px; }
+      .vendor-detail-header { grid-template-columns: 44px minmax(0, 1fr) repeat(3, 44px); }
+      .vendor-detail-header h3 { grid-column: 2 / -1; }
+      .vendor-detail-header > a { grid-column: 3; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
     }
   </style>
 </head>
@@ -256,7 +270,7 @@
         </button>
         <div class="toolbar-search">
           <i class="fas fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm z-10 pointer-events-none"></i>
-          <input id="searchInput" type="text" placeholder="" oninput="handleSearch(this.value)"/>
+          <input id="searchInput" type="search" aria-label="Tìm gánh hàng" placeholder="" oninput="handleSearch(this.value)"/>
         </div>
         <button id="langToggle" type="button" onclick="toggleLang()"
           class="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-full border border-blue-200 bg-white/70 text-slate-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-400 transition"
@@ -265,28 +279,32 @@
     </section>
 
     <!-- BOTTOM NAV (mobile/tablet only): Danh sách / Bản đồ / + Đóng góp / Xét duyệt -->
-    <nav id="mobileBottomBar">
+    <nav id="mobileBottomBar" aria-label="Điều hướng chính">
       <div class="mobile-bar">
-        <button type="button" class="mobile-nav-btn active" data-tab="map" data-subview="list" onclick="switchTab('map','list')">
+        <button type="button" class="mobile-nav-btn active" aria-current="page" data-tab="map" data-subview="list" onclick="switchTab('map','list')">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
             <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
           </svg>
+          <span data-i18n="navList">Danh sách</span>
         </button>
         <button type="button" class="mobile-nav-btn" data-tab="map" data-subview="map" onclick="switchTab('map','map')">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
           </svg>
+          <span data-i18n="navMap">Bản đồ</span>
         </button>
         <button type="button" class="mobile-nav-btn" data-tab="form" onclick="switchTab('form')">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
+          <span data-i18n="navContribute">Đóng góp</span>
         </button>
         <button type="button" class="mobile-nav-btn" data-tab="review" onclick="switchTab('review')">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
           </svg>
+          <span data-i18n="navReview">Xét duyệt</span>
         </button>
       </div>
     </nav>
@@ -477,6 +495,7 @@
     // ===== i18n =====
     const STRINGS = {
       vi: {
+        navList: 'Danh sách', navMap: 'Bản đồ', navContribute: 'Đóng góp', navReview: 'Xét duyệt',
         heroTitle: 'Bản đồ hương vị yêu thương',
         heroDesc: 'Nơi cộng đồng cùng nhau lưu lại địa chỉ, hình ảnh và mạng xã hội của các gánh hàng rong quen thuộc — giúp mọi người dễ dàng tìm đến ủng hộ. Hãy yêu thương và gìn giữ văn hoá Việt.',
         tabMap: 'Bản đồ', tabContribute: 'Đóng góp thông tin', tabReview: 'Xét duyệt thông tin',
@@ -501,6 +520,7 @@
         statsText: (n, h) => `${n} gánh hàng · ${h} ♥ hôm nay`,
       },
       en: {
+        navList: 'Vendors', navMap: 'Map', navContribute: 'Contribute', navReview: 'Review',
         heroTitle: 'Street Food Map of Saigon',
         heroDesc: 'A community map of authentic Vietnamese street vendors in Ho Chi Minh City — bánh mì carts, sugarcane juice stalls, pho, and beloved sidewalk flavours. Help locals and visitors find and support these cultural gems.',
         tabMap: 'Map', tabContribute: 'Add Vendor', tabReview: 'Review',
@@ -575,11 +595,16 @@
       document.querySelectorAll('[data-tab]').forEach(btn => {
         const isActive = btn.dataset.tab === tab && (!btn.dataset.subview || btn.dataset.subview === mobileMapView);
         btn.classList.toggle('active', isActive);
+        if (isActive) btn.setAttribute('aria-current', 'page');
+        else btn.removeAttribute('aria-current');
       });
 
       if (tab === 'form') renderAuthState();
       if (tab === 'review') loadPendingVendors();
       if (tab !== 'map') exitAppMode();
+      if (window.innerWidth < 1024) {
+        document.getElementById('toolbarSection').scrollIntoView({ block: 'start' });
+      }
       if (tab === 'map') setTimeout(() => leafletMap && leafletMap.invalidateSize(), 80);
     }
 
@@ -797,7 +822,7 @@
     function vendorDetailCardHtml(v) {
       return `
         <div class="rounded-2xl border border-blue-200/60 bg-white/90 p-3">
-          <div class="flex items-center gap-3 pb-3 border-b border-blue-100">
+          <div class="vendor-detail-header flex items-center gap-3 pb-3 border-b border-blue-100">
             <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-14 w-14 object-contain flex-shrink-0"/>
             <h3 class="font-semibold text-slate-900 text-base flex-1 leading-snug">${escapeHtml(v.name)}</h3>
             <a href="${googleMapsUrl(v)}" target="_blank" rel="noopener" title="Mở trong Google Maps"
@@ -808,7 +833,7 @@
               class="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-blue-200 bg-white hover:bg-blue-50 text-slate-500 hover:text-blue-600">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
             </button>
-            <button type="button" onclick="collapseVendor(event)" class="flex-shrink-0 text-slate-400 hover:text-slate-600 p-1"><i class="fas fa-xmark"></i></button>
+            <button type="button" onclick="collapseVendor(event)" aria-label="Đóng chi tiết" class="flex-shrink-0 text-slate-400 hover:text-slate-600 p-1"><i class="fas fa-xmark"></i></button>
           </div>
           <div class="pt-3 space-y-1.5">
             ${v.description ? `<p class="text-sm text-slate-600">${escapeHtml(v.description)}</p>` : ''}
@@ -1343,13 +1368,16 @@
     }, { passive: true });
 
     desktopMQ.addEventListener('change', () => { if (!desktopMQ.matches) exitAppMode(); });
-    window.addEventListener('resize', () => { if (appModeActive) setToolbarHeightVar(); });
+    window.addEventListener('resize', () => {
+      if (appModeActive) setToolbarHeightVar();
+      if (leafletMap) leafletMap.invalidateSize();
+    });
 
     setupHeroObserver();
     setLang(currentLang);
     loadVendors();
     renderAuthState();
   </script>
-  <div style="text-align:center;padding:12px 0 80px;font-size:11px;color:#94a3b8;letter-spacing:.03em;">v2026.07.02</div>
+  <div class="site-version">v2026.07.02</div>
 </body>
 </html>
