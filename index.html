@@ -447,7 +447,7 @@
         <div>
           <h2 class="text-xl font-semibold text-slate-900" data-i18n="reviewTitle">Xét duyệt thông tin</h2>
           <p class="text-sm text-slate-500 mt-1" data-i18n="reviewDesc">
-            Các gánh hàng mới gửi đang chờ cộng đồng xác minh. Đủ <strong>3 lượt duyệt</strong> sẽ tự động hiển thị công khai.
+            Các gánh hàng mới gửi đang chờ cộng đồng xác minh. Đủ <strong>1 lượt duyệt</strong> sẽ tự động hiển thị công khai.
             <strong>Chỉ duyệt nếu bạn đã kiểm chứng thông tin này là đúng</strong> (vd: bạn từng ghé/biết rõ gánh hàng đó).
             Cần đăng nhập để duyệt - mỗi tài khoản chỉ duyệt được 1 lần cho mỗi gánh.
           </p>
@@ -497,7 +497,7 @@
         formSubmit: 'Gửi', formSubmitted: 'Đã gửi ✓',
         formSuccess: 'Cảm ơn! Thông tin đã được ghi nhận và đang chờ duyệt.',
         reviewTitle: 'Xét duyệt thông tin',
-        reviewDesc: 'Các gánh hàng mới gửi đang chờ cộng đồng xác minh. Đủ <strong>3 lượt duyệt</strong> sẽ tự động hiển thị công khai. <strong>Chỉ duyệt nếu bạn đã kiểm chứng thông tin này là đúng</strong> (vd: bạn từng ghé/biết rõ gánh hàng đó). Cần đăng nhập để duyệt — mỗi tài khoản chỉ duyệt được 1 lần cho mỗi gánh.',
+        reviewDesc: 'Các gánh hàng mới gửi đang chờ cộng đồng xác minh. Đủ <strong>1 lượt duyệt</strong> sẽ tự động hiển thị công khai. <strong>Chỉ duyệt nếu bạn đã kiểm chứng thông tin này là đúng</strong> (vd: bạn từng ghé/biết rõ gánh hàng đó). Cần đăng nhập để duyệt — mỗi tài khoản chỉ duyệt được 1 lần cho mỗi gánh.',
         reviewLoginHint: 'Đăng nhập ở tab "Đóng góp thông tin" để xem danh sách chờ duyệt.',
         reviewLoading: 'Đang tải danh sách chờ duyệt...',
         reviewNoPending: 'Không có gánh hàng nào đang chờ duyệt. 🎉',
@@ -522,7 +522,7 @@
         formSubmit: 'Submit', formSubmitted: 'Submitted ✓',
         formSuccess: 'Thank you! Your submission is pending community review.',
         reviewTitle: 'Review Submissions',
-        reviewDesc: 'New vendor submissions await community verification. <strong>3 approvals</strong> makes a listing public. <strong>Only approve if you have personally verified this vendor</strong> (e.g. you\'ve visited or know it well). Sign in required — one approval per account per vendor.',
+        reviewDesc: 'New vendor submissions await community verification. <strong>1 approval</strong> makes a listing public. <strong>Only approve if you have personally verified this vendor</strong> (e.g. you\'ve visited or know it well). Sign in required — one approval per account per vendor.',
         reviewLoginHint: 'Sign in on the "Add Vendor" tab to review pending listings.',
         reviewLoading: 'Loading pending vendors...',
         reviewNoPending: 'No pending vendors. 🎉',
@@ -1144,7 +1144,7 @@
       }
     }
 
-    // ===== Xét duyệt thông tin (cộng đồng tự duyệt, 3 lượt = tự công khai) =====
+    // ===== Xét duyệt thông tin (cộng đồng tự duyệt, 1 lượt = tự công khai) =====
     // Đọc trực tiếp Neon Data API (cần đăng nhập), khác với tab Bản đồ (đọc vendors.json tĩnh),
     // vì danh sách chờ duyệt cần thấy ngay khi có người vừa gửi, không chờ đồng bộ hàng giờ.
     async function loadPendingVendors() {
@@ -1197,7 +1197,7 @@
             </a>
           </div>
           <div class="review-actions flex flex-col items-center gap-2 flex-shrink-0 w-24">
-            <span class="text-xs font-bold text-slate-600">${count}/3 duyệt</span>
+            <span class="text-xs font-bold text-slate-600">${count}/1 duyệt</span>
             <button type="button" ${approvedByMe ? 'disabled' : ''} onclick="approveVendor(${v.id}, this)"
               class="w-full rounded-full px-3 py-2 text-xs font-medium transition ${approvedByMe
                 ? 'bg-slate-100 text-slate-400 cursor-not-allowed'

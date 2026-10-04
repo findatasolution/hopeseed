@@ -25,7 +25,7 @@ Xét duyệt thông tin) trên cùng 1 trang. Kiến trúc:
    → điền form → bấm Gửi → JS POST thẳng vào Neon Data API (`status='pending'`). Không qua GitHub nữa.
 3. **Xét duyệt thông tin**: bất kỳ tài khoản đã đăng nhập nào cũng xem được danh sách gánh hàng đang `pending`
    (đọc trực tiếp Data API, không qua `vendors.json` vì cần thấy ngay) và bấm "Duyệt" nếu đã kiểm chứng thông tin
-   đúng. Đủ **3 lượt duyệt** (3 tài khoản khác nhau) → trigger DB tự chuyển `status` sang `approved`, không cần
+   đúng. Đủ **1 lượt duyệt** → trigger DB tự chuyển `status` sang `approved`, không cần
    admin can thiệp. Admin vẫn có thể tự duyệt/từ chối thủ công trong Neon Console khi cần (vd: gánh spam).
 4. **Thả tim**: mỗi dòng gánh hàng có số tim hôm nay + icon mặt trời (sáng rõ khi ≥100 tim, tối/xám khi 0 tim) +
    nút tim (♥) — bấm thì POST thẳng vào `street_vendor_hearts`, cũng cần đăng nhập (dùng chung phiên).
@@ -64,3 +64,12 @@ Bảng mã màu
 
 
  
+
+## Thay đổi ngưỡng xét duyệt xuống 1 lượt
+
+Chạy `migrations/20261004_one_approval.sql` trong Neon SQL Editor trước khi deploy giao diện mới.
+Migration thay function của trigger hiện có, chuyển các listing pending đã có ít nhất 1 lượt duyệt sang approved,
+giữ các listing chưa có lượt duyệt ở pending và không đổi listing rejected.
+Quyền RLS và giới hạn 1 lượt duyệt/tài khoản/listing giữ nguyên.
+Sau khi áp dụng, chạy đồng bộ `scripts/sync_vendors.py` với DATABASE_URL trên môi trường đang có quyền truy cập
+hoặc chờ lần đồng bộ tiếp theo để `vendors.json` công khai được cập nhật.

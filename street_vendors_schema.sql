@@ -141,7 +141,7 @@ BEFORE INSERT ON street_vendor_hearts
 FOR EACH ROW EXECUTE FUNCTION street_vendor_hearts_force_user();
 
 
--- ===== Xét duyệt thông tin (cộng đồng tự duyệt - đủ 3 lượt thì tự công khai) =====
+-- ===== Xét duyệt thông tin (cộng đồng tự duyệt - đủ 1 lượt thì tự công khai) =====
 CREATE TABLE IF NOT EXISTS street_vendor_approvals (
   id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   vendor_id   BIGINT NOT NULL REFERENCES street_vendors(id) ON DELETE CASCADE,
@@ -185,7 +185,7 @@ CREATE TRIGGER trg_approvals_before_insert
 BEFORE INSERT ON street_vendor_approvals
 FOR EACH ROW EXECUTE FUNCTION street_vendor_approvals_before_insert();
 
--- Đủ 3 lượt duyệt -> tự chuyển status sang 'approved' (chạy với quyền owner qua
+-- Đủ 1 lượt duyệt -> tự chuyển status sang 'approved' (chạy với quyền owner qua
 -- SECURITY DEFINER nên không cần cấp UPDATE trên street_vendors cho role authenticated).
 CREATE OR REPLACE FUNCTION street_vendor_approvals_after_insert()
 RETURNS trigger AS $$
@@ -193,7 +193,7 @@ DECLARE
   cnt int;
 BEGIN
   SELECT count(*) INTO cnt FROM street_vendor_approvals WHERE vendor_id = NEW.vendor_id;
-  IF cnt >= 3 THEN
+  IF cnt >= 1 THEN
     UPDATE street_vendors SET status = 'approved' WHERE id = NEW.vendor_id AND status = 'pending';
   END IF;
   RETURN NEW;
