@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Giới thiệu | HopeSeed</title>
+  <meta name="description" content="Cùng HopeSeed lưu giữ và ủng hộ văn hoá gánh hàng rong tại TP.HCM.">
+  <link rel="canonical" href="https://hopeseed.space/about.html">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap&subset=vietnamese" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #334155; background: linear-gradient(125deg, #e0f2fe, #bae6fd 45%, #fff); font-family: Nunito, system-ui, sans-serif; }
+    a { color: #0284c7; text-decoration: none; }
+    button, a { touch-action: manipulation; }
+    a:focus-visible, button:focus-visible { outline: 3px solid #0284c7; outline-offset: 3px; }
+    .page-header { max-width: 960px; margin: auto; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .back-link { display: flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 800; }
+    #langToggle { min-width: 44px; min-height: 44px; border: 1px solid #cbd5e1; border-radius: 50%; background: #fff; color: #475569; font-weight: 800; cursor: pointer; }
+    main { max-width: 960px; margin: 24px auto 64px; padding: 0 24px; }
+    .hero { display: grid; grid-template-columns: 1.2fr 1fr; gap: 32px; align-items: center; }
+    h1 { font-size: clamp(28px, 4vw, 40px); color: #0f172a; line-height: 1.2; margin: 12px 0 20px; }
+    .eyebrow { color: #0284c7; font-weight: 800; letter-spacing: .05em; }
+    .description { line-height: 1.8; }
+    #heroStats { color: #0284c7; font-weight: 800; }
+    .illustration { width: 100%; max-width: 360px; justify-self: center; }
+    .cta { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; background: #3788bb; color: #fff; border-radius: 24px; padding: 12px 24px; margin-top: 12px; font-weight: 800; }
+    #mobileBottomBar { display: none; }
+    .mobile-bar { display: flex; width: 100%; background: #fff; }
+    .mobile-nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 60px; padding: 7px 2px; color: #65676b; flex: 1 1 0; min-width: 0; font-size: 11px; font-weight: 700; border-top: 3px solid transparent; }
+    .nav-icon { width: 22px; height: 22px; }
+    @media (max-width: 1023px) {
+      body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+      #mobileBottomBar { display: block; position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; background: #fff; border-top: 1px solid #e4e6eb; padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+    }
+    @media (max-width: 639px) {
+      .page-header { padding: 8px 16px; }
+      main { margin-top: 16px; padding: 0 20px; }
+      .hero { grid-template-columns: 1fr; gap: 20px; }
+      .illustration { max-width: 240px; }
+      .cta { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <a href="./" class="back-link"><span aria-hidden="true">←</span><span data-i18n="back">Về HopeSeed</span></a>
+    <button id="langToggle" type="button" onclick="toggleLang()" aria-label="Đổi ngôn ngữ / Switch language">EN</button>
+  </header>
+  <main>
+    <section class="hero">
+      <div>
+        <p class="eyebrow" data-i18n="about">VỀ HOPESEED</p>
+        <h1 data-i18n="title">Bản đồ hương vị yêu thương</h1>
+        <p class="description" data-i18n="description">Nơi cộng đồng cùng nhau lưu lại địa chỉ, hình ảnh và mạng xã hội của các gánh hàng rong quen thuộc — giúp mọi người dễ dàng tìm đến ủng hộ. Hãy yêu thương và gìn giữ văn hoá Việt.</p>
+        <p id="heroStats" aria-live="polite"></p>
+        <a href="./" class="cta" data-i18n="explore">Khám phá gánh hàng</a>
+      </div>
+      <img class="illustration" src="https://ik.imagekit.io/o2u9hny2s/hopeseed/platform_assets/maincharactor.png" alt="Gánh hàng rong" width="360" height="360">
+    </section>
+  </main>
+    <nav id="mobileBottomBar" aria-label="Điều hướng chính">
+      <div class="mobile-bar">
+        <a class="mobile-nav-btn" href="./?tab=list">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+          <span data-i18n="navList">Danh sách</span>
+        </a>
+        <a class="mobile-nav-btn" href="./?tab=map">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+          </svg>
+          <span data-i18n="navMap">Bản đồ</span>
+        </a>
+        <a class="mobile-nav-btn" href="./?tab=form">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span data-i18n="navContribute">Đóng góp</span>
+        </a>
+        <a class="mobile-nav-btn" href="./?tab=review">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <span data-i18n="navReview">Xét duyệt</span>
+        </a>
+      </div>
+    </nav>
+  <script>
+    const copy = {
+      vi: { back: 'Về HopeSeed', about: 'VỀ HOPESEED', title: 'Bản đồ hương vị yêu thương', description: 'Nơi cộng đồng cùng nhau lưu lại địa chỉ, hình ảnh và mạng xã hội của các gánh hàng rong quen thuộc — giúp mọi người dễ dàng tìm đến ủng hộ. Hãy yêu thương và gìn giữ văn hoá Việt.', explore: 'Khám phá gánh hàng', navList: 'Danh sách', navMap: 'Bản đồ', navContribute: 'Đóng góp', navReview: 'Xét duyệt' },
+      en: { back: 'Back to HopeSeed', about: 'ABOUT HOPESEED', title: 'Street Food Map of Saigon', description: 'A community map of authentic Vietnamese street vendors in Ho Chi Minh City — bánh mì carts, sugarcane juice stalls, pho, and beloved sidewalk flavours. Help locals and visitors find and support these cultural gems.', explore: 'Explore vendors', navList: 'Vendors', navMap: 'Map', navContribute: 'Contribute', navReview: 'Review' }
+    };
+    let lang = localStorage.getItem('hopeseed_lang') === 'en' ? 'en' : 'vi';
+    let vendors = [];
+    function renderStats() {
+      const hearts = vendors.reduce((sum, vendor) => sum + (Number(vendor.hearts_today) || 0), 0);
+      document.getElementById('heroStats').textContent = vendors.length
+        ? (lang === 'en' ? vendors.length + ' vendors · ' + hearts + ' ♥ today' : vendors.length + ' gánh hàng · ' + hearts + ' ♥ hôm nay')
+        : '';
+    }
+    function setLang() {
+      document.documentElement.lang = lang;
+      document.title = (lang === 'en' ? 'About' : 'Giới thiệu') + ' | HopeSeed';
+      document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = copy[lang][el.dataset.i18n]; });
+      document.getElementById('langToggle').textContent = lang === 'vi' ? 'EN' : 'VI';
+      renderStats();
+    }
+    function toggleLang() { lang = lang === 'vi' ? 'en' : 'vi'; localStorage.setItem('hopeseed_lang', lang); setLang(); }
+    setLang();
+    fetch('vendors.json?t=' + Date.now()).then(response => {
+      if (!response.ok) throw new Error('Unable to load vendor statistics');
+      return response.json();
+    }).then(data => { if (Array.isArray(data)) { vendors = data; renderStats(); } }).catch(() => {});
+  </script>
+</body>
+</html>
