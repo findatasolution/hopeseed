@@ -46,7 +46,7 @@
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap&subset=vietnamese" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxuvwv/b4jzlGC62Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <link rel="icon" href="https://ik.imagekit.io/o2u9hny2s/hopeseed/LOGO8.png?updatedAt=1782811740275" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://ik.imagekit.io" crossorigin/>
@@ -161,8 +161,13 @@
     .mobile-nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 60px; padding: 7px 2px; color: #65676b; flex: 1 1 0; min-width: 0; font-size: 11px; font-weight: 700; border-top: 3px solid transparent; text-decoration: none; }
     .mobile-nav-btn .nav-icon { width: 22px; height: 22px; flex-shrink: 0; }
     .mobile-nav-btn.active { color: #1877f2; border-top-color: #1877f2; }
-    #vendorList > div { overflow-wrap: anywhere; }
-    .vendor-detail-header h3 { min-width: 0; overflow-wrap: anywhere; }
+    #vendorList > div, #reviewList > div { min-width: 0; overflow-wrap: break-word; }
+    #vendorList .vendor-detail-header h3 { min-width: 0; word-break: normal; overflow-wrap: break-word; }
+    #vendorList .vendor-detail-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    #vendorList .vendor-detail-actions > a, #vendorList .vendor-detail-actions > button { flex-shrink: 0; }
+    .field, #vendorForm > div { min-width: 0; }
+    .field input, .field textarea, .field select { min-width: 0; max-width: 100%; }
+    .tag-chip { max-width: 100%; overflow-wrap: anywhere; }
     .site-version { text-align: center; padding: 12px 0 24px; font-size: 11px; color: #94a3b8; }
 
     @media (max-width: 1023px) {
@@ -196,18 +201,32 @@
       #vendorSubmitBtn { width: 100%; }
       .vendor-row { gap: 10px; padding: 12px 0; }
       .vendor-row > img { width: 64px; height: 64px; }
-      .vendor-row .truncate { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+      .vendor-row .truncate { white-space: normal; overflow: visible; word-break: normal; overflow-wrap: break-word; }
       .vendor-row button { width: 44px; height: 44px; }
-      .vendor-detail-header { display: grid; grid-template-columns: 48px minmax(0, 1fr) repeat(3, 44px); gap: 4px; }
-      .vendor-detail-header > img { width: 44px; height: 44px; }
-      .vendor-detail-header > a, .vendor-detail-header > button { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
-      #reviewList { overflow-wrap: anywhere; }
+      #vendorList .vendor-detail-header { display: grid; grid-template-columns: 48px minmax(0, 1fr); column-gap: 12px; row-gap: 8px; }
+      #vendorList .vendor-detail-header > img { width: 48px; height: 48px; }
+      #vendorList .vendor-detail-header h3 { grid-column: 2; font-size: 17px; line-height: 1.4; }
+      #vendorList .vendor-detail-actions { grid-column: 1 / -1; justify-content: flex-end; }
+      #vendorList .vendor-detail-actions > a, #vendorList .vendor-detail-actions > button { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+      #reviewList .review-row { display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 12px; padding: 12px; }
+      #reviewList .review-row > img { width: 48px; height: 48px; }
+      #reviewList .review-content { grid-column: 2; min-width: 0; }
+      #reviewList .review-content > p:first-child { font-size: 16px; line-height: 1.4; }
+      #reviewList .review-actions { grid-column: 1 / -1; width: auto; flex-direction: row; justify-content: space-between; border-top: 1px solid #dbeafe; padding-top: 12px; }
+      #reviewList .review-actions button { width: auto; min-width: 96px; }
+      #panelForm p, #panelReview p { word-break: normal; overflow-wrap: break-word; }
+      #authBar button { flex-shrink: 0; }
+      #vendorList .vendor-detail-social { flex-wrap: wrap; }
+      #vendorList .vendor-detail-social a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
       #reviewList button { min-height: 44px; }
     }
+    @media (max-width: 639px) {
+      #vendorForm { grid-template-columns: minmax(0, 1fr); }
+    }
     @media (max-width: 374px) {
-      .vendor-detail-header { grid-template-columns: 44px minmax(0, 1fr) repeat(3, 44px); }
-      .vendor-detail-header h3 { grid-column: 2 / -1; }
-      .vendor-detail-header > a { grid-column: 3; }
+      #panelMap, #panelForm, #panelReview { padding-left: 12px !important; padding-right: 12px !important; }
+      #listColumn { padding: 12px !important; }
+      .vendor-row > img { width: 48px; height: 48px; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
@@ -790,6 +809,7 @@
           <div class="vendor-detail-header flex items-center gap-3 pb-3 border-b border-blue-100">
             <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-14 w-14 object-contain flex-shrink-0"/>
             <h3 class="font-semibold text-slate-900 text-base flex-1 leading-snug">${escapeHtml(v.name)}</h3>
+            <div class="vendor-detail-actions">
             <a href="${googleMapsUrl(v)}" target="_blank" rel="noopener" title="Mở trong Google Maps"
               class="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-blue-200 bg-white hover:bg-blue-50 text-slate-500 hover:text-blue-600">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
@@ -799,13 +819,14 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
             </button>
             <button type="button" onclick="collapseVendor(event)" aria-label="Đóng chi tiết" class="flex-shrink-0 text-slate-400 hover:text-slate-600 p-1"><i class="fas fa-xmark"></i></button>
+            </div>
           </div>
           <div class="pt-3 space-y-1.5">
             ${v.description ? `<p class="text-sm text-slate-600">${escapeHtml(v.description)}</p>` : ''}
             ${v.opening_hours ? `<p class="text-xs text-slate-500"><i class="fas fa-clock mr-1"></i>${escapeHtml(v.opening_hours)}</p>` : ''}
             <p class="text-xs text-slate-500"><i class="fas fa-location-dot mr-1"></i>${escapeHtml(v.address)}</p>
             ${tagChips(v)}
-            <div class="flex items-center gap-3 pt-1">${socialIcons(v)}</div>
+            <div class="vendor-detail-social flex items-center gap-3 pt-1">${socialIcons(v)}</div>
             <input type="text" placeholder="Ghi chú của bạn"
               class="mt-1 w-full rounded-full border border-blue-200/60 px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"/>
           </div>
@@ -1165,9 +1186,9 @@
 
     function reviewRowHtml(v, count, approvedByMe) {
       return `
-        <div class="rounded-2xl border border-blue-200/60 bg-white/90 p-4 flex items-start gap-4">
+        <div class="review-row rounded-2xl border border-blue-200/60 bg-white/90 p-4 flex items-start gap-4">
           <img src="${escapeHtml(vendorIcon(v))}" alt="${escapeHtml(v.name)}" class="h-16 w-16 object-contain flex-shrink-0"/>
-          <div class="min-w-0 flex-1 space-y-1">
+          <div class="review-content min-w-0 flex-1 space-y-1">
             <p class="font-semibold text-slate-900">${escapeHtml(v.name)}</p>
             <p class="text-sm text-slate-600">${escapeHtml(v.description || '')}</p>
             <p class="text-xs text-slate-500"><i class="fas fa-location-dot mr-1"></i>${escapeHtml(v.address)}</p>
@@ -1175,7 +1196,7 @@
               Xem địa điểm trên Google Maps <i class="fas fa-up-right-from-square ml-1"></i>
             </a>
           </div>
-          <div class="flex flex-col items-center gap-2 flex-shrink-0 w-24">
+          <div class="review-actions flex flex-col items-center gap-2 flex-shrink-0 w-24">
             <span class="text-xs font-bold text-slate-600">${count}/3 duyệt</span>
             <button type="button" ${approvedByMe ? 'disabled' : ''} onclick="approveVendor(${v.id}, this)"
               class="w-full rounded-full px-3 py-2 text-xs font-medium transition ${approvedByMe
