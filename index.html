@@ -50,7 +50,7 @@
   <link rel="icon" href="https://ik.imagekit.io/o2u9hny2s/hopeseed/LOGO8.png?updatedAt=1782811740275" type="image/png">
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://ik.imagekit.io" crossorigin/>
-  <link rel="preconnect" href="https://basemaps.cartocdn.com" crossorigin/>
+  <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
@@ -664,6 +664,7 @@
     function authSignOut() {
       clearSession();
       renderAuthState();
+      loadVendors();
     }
 
     async function renderAuthState() {
@@ -706,6 +707,7 @@
         else await authSignIn(email, password);
         document.getElementById('authForm').reset();
         await renderAuthState();
+        await loadVendors();
       } catch (err) {
         msg.textContent = err.message;
         msg.className = 'text-sm text-red-500';
@@ -919,9 +921,9 @@
       if (!el) return;
       leafletMap = L.map('mapDiv', { zoomControl: true })
         .setView([10.7769, 106.7009], 13);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OSM</a> © <a href="https://carto.com">CARTO</a>',
-        subdomains: 'abcd', maxZoom: 19
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
       }).addTo(leafletMap);
       addMapControls();
       setTimeout(() => requestUserLocation(true), 800);
@@ -1121,11 +1123,32 @@
       const list = document.getElementById('vendorList');
       list.innerHTML = `<p class="text-sm text-slate-500">${STRINGS[currentLang].listLoading}</p>`;
       try {
-        // Đọc file tĩnh vendors.json (được scripts/sync_vendors.py tự sinh từ các gánh hàng
-        // đã duyệt trong Neon). Không cần auth, không gọi DB trực tiếp từ trình duyệt.
-        const res = await fetch(`vendors.json?t=${Date.now()}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        allVendors = await res.json();
+        // Public visitors use the exported snapshot. Signed-in users also refresh
+        // approved listings from Neon so a newly approved vendor appears immediately.
+        let snapshot = null;
+        try {
+          const res = await fetch(`vendors.json?t=${Date.now()}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) snapshot = data;
+          }
+        } catch (err) { console.warn('Vendor snapshot unavailable', err); }
+        allVendors = snapshot || [];
+        try {
+          const token = await getValidAccessToken();
+          if (token && NEON_DATA_API) {
+            const res = await fetch(`${NEON_DATA_API}/street_vendors?status=eq.approved&order=created_at.desc`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const approved = await res.json();
+            if (!Array.isArray(approved)) throw new Error('Invalid approved vendor response');
+            const heartsById = new Map(allVendors.map(v => [v.id, v.hearts_today || 0]));
+            allVendors = approved.map(v => ({ ...v, hearts_today: heartsById.get(v.id) || 0 }));
+            snapshot = allVendors;
+          }
+        } catch (err) { console.warn('Live vendor refresh unavailable', err); }
+        if (snapshot === null) throw new Error('No vendor data available');
         if (!allVendors.length) {
           list.innerHTML = `<p class="text-sm text-slate-500">${STRINGS[currentLang].listEmpty}</p>`;
           initLeafletMap();
@@ -1149,13 +1172,14 @@
     // vì danh sách chờ duyệt cần thấy ngay khi có người vừa gửi, không chờ đồng bộ hàng giờ.
     async function loadPendingVendors() {
       const list = document.getElementById('reviewList');
-      const token = await getValidAccessToken();
-      if (!token) {
-        list.innerHTML = `<p class="text-sm text-slate-500">${STRINGS[currentLang].reviewLoginHint}</p>`;
-        return;
-      }
       list.innerHTML = `<p class="text-sm text-slate-500">${STRINGS[currentLang].reviewLoading}</p>`;
       try {
+        const token = await getValidAccessToken();
+        if (!token) {
+          list.innerHTML = `<p class="text-sm text-slate-500">${STRINGS[currentLang].reviewLoginHint}</p>`;
+          return;
+        }
+        if (!NEON_DATA_API) throw new Error('Missing Data API configuration');
         const headers = { 'Authorization': `Bearer ${token}` };
         const [pendingRes, approvalsRes] = await Promise.all([
           fetch(`${NEON_DATA_API}/street_vendors?status=eq.pending&order=created_at.desc`, { headers }),
@@ -1163,7 +1187,9 @@
         ]);
         if (!pendingRes.ok) throw new Error(`HTTP ${pendingRes.status}`);
         const pending = await pendingRes.json();
-        const approvals = approvalsRes.ok ? await approvalsRes.json() : [];
+        if (!Array.isArray(pending)) throw new Error('Invalid pending vendor response');
+        const approvalData = approvalsRes.ok ? await approvalsRes.json() : [];
+        const approvals = Array.isArray(approvalData) ? approvalData : [];
 
         const myId = (decodeJwt(token) || {}).sub;
         const countByVendor = {};
@@ -1223,7 +1249,7 @@
           body: JSON.stringify({ vendor_id: vendorId })
         });
         if (res.ok) {
-          await loadPendingVendors();
+          await Promise.all([loadPendingVendors(), loadVendors()]);
         } else {
           const body = await res.json().catch(() => ({}));
           if (body.code === '23505') {

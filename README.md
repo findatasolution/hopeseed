@@ -2,6 +2,8 @@ Hạ tầng quản lý:
 
 Hạ tầng quản lý (cập nhật - không dùng Netlify/Render, chỉ dùng dịch vụ free):
 - GitHub Pages: lưu trữ mã nguồn + host toàn bộ frontend tĩnh (Settings -> Pages -> branch `main` / root) — đã bật.
+- `config.js` được lưu cùng source để GitHub Pages deploy từ branch `main` luôn có cấu hình trình duyệt. Chỉ chứa public/publishable client credentials, không chứa connection string hoặc server key.
+- Workflow `Validate frontend` kiểm tra cấu hình và JavaScript; workflow Pages tích hợp sẵn xuất bản website.
 - Console Neon: Postgres (managed), nguồn dữ liệu duy nhất.
 - **Neon Auth (Stack Auth)**: đăng nhập thật bằng email/mật khẩu, miễn phí, không cần backend riêng. Bật ở
   Neon Console -> Auth. Frontend chỉ dùng `Stack Auth Project ID` + `Publishable Client Key` (an toàn để public,
@@ -33,7 +35,7 @@ Xét duyệt thông tin) trên cùng 1 trang. Kiến trúc:
    - đọc các GitHub issue cũ (nếu còn) có label `gop-y-gang-hang` chưa `synced` → insert Neon `status='pending'`.
    - đọc `street_vendors` có `status='approved'` (kèm số tim hôm nay từ `street_vendor_hearts`) → ghi `vendors.json`.
    - tự chạy mỗi giờ qua 1 trigger lịch (không cần GitHub Actions secret).
-6. Tab "Bản đồ" fetch tĩnh `vendors.json` để hiển thị danh sách (đọc không cần đăng nhập) — phần ghi (đóng góp,
+6. Tab "Bản đồ" fetch tĩnh `vendors.json` cho khách chưa đăng nhập; khi đã đăng nhập, đọc thêm listing `approved` trực tiếp từ Data API để thấy ngay các listing mới được duyệt — phần ghi (đóng góp,
    thả tim, duyệt) và tab "Xét duyệt thông tin" gọi Data API trực tiếp, cần đăng nhập.
 7. Icon "Loại món" + ảnh mặc định/mascot lấy trực tiếp từ `image_url` (DB tự gán qua trigger, xem
    `CATEGORY_ICON_SLUGS`-tương-đương trong SQL), không qua proxy/transform nào.

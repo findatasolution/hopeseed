@@ -1,43 +1,34 @@
-name: Deploy GitHub Pages
+name: Validate frontend
 
 on:
   push:
     branches: [main]
+  pull_request:
 
 permissions:
-  pages: write
-  id-token: write
   contents: read
 
 jobs:
-  deploy:
+  validate:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Generate runtime config
+      - name: Validate browser configuration and scripts
         run: |
-          cat > config.js <<'EOF'
-          window.HOPESEED_CONFIG = {
-            GA_MEASUREMENT_ID: '${{ secrets.GA_MEASUREMENT_ID }}',
-            STACK_PROJECT_ID: '${{ secrets.STACK_PROJECT_ID }}',
-            STACK_PUBLISHABLE_CLIENT_KEY: '${{ secrets.STACK_PUBLISHABLE_CLIENT_KEY }}',
-            STACK_API_BASE: '${{ secrets.STACK_API_BASE }}',
-            NEON_DATA_API: '${{ secrets.NEON_DATA_API }}'
-          };
-          EOF
-
-      - name: Create deploy output
-        run: |
-          rm -rf out
-          mkdir out
-          rsync -av --exclude='.git' --exclude='.github' --exclude='.gitignore' --exclude='.env' --exclude='README.md' --exclude='requirements.txt' --exclude='schema.sql' --exclude='street_vendors_schema.sql' --exclude='database.py' --exclude='main.py' --exclude='auth.py' --exclude='models.py' --exclude='scripts' . out
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: out
+          node <<'JS'
+          const fs = require('fs');
+          const vm = require('vm');
+          const context = { window: {} };
+          vm.runInNewContext(fs.readFileSync('config.js', 'utf8'), context);
+          const config = context.window.HOPESEED_CONFIG;
+          for (const key of ['STACK_PROJECT_ID', 'STACK_PUBLISHABLE_CLIENT_KEY', 'STACK_API_BASE', 'NEON_DATA_API']) {
+            if (!config || !config[key]) throw new Error('Missing browser configuration: ' + key);
+          }
+          for (const file of ['index.html', 'about.html']) {
+            const html = fs.readFileSync(file, 'utf8');
+            for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)) {
+              if (!match[0].includes('application/ld+json')) new Function(match[1]);
+            }
+          }
+          console.log('Browser configuration and inline scripts validated.');
+          JS
